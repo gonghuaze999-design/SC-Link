@@ -241,3 +241,72 @@ class StoredFile(Base):
     entity_id: Mapped[int] = mapped_column(Integer, default=0)
     size: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Publication(Base):
+    """供需看板发布:默认全员可见,可设私密;到期自动关闭"""
+
+    __tablename__ = "publications"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    type: Mapped[str] = mapped_column(String(16), index=True)  # demand 采购需求 / supply 供货信息
+    product_line_id: Mapped[int | None] = mapped_column(ForeignKey("product_lines.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(128))
+    quantity: Mapped[str] = mapped_column(String(64), default="")
+    price_min: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    price_max: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    currency: Mapped[str] = mapped_column(String(8), default="CNY")
+    validity_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    visibility: Mapped[str] = mapped_column(String(16), default="public")  # public/private
+    status: Mapped[str] = mapped_column(String(16), default="active")  # active/closed/dealt
+    content: Mapped[str] = mapped_column(Text, default="")
+    intent_modes: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    goods_preference: Mapped[str] = mapped_column(String(16), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class UserPriority(Base):
+    """用户对上游供货方/下游客户的自设优先级(1-9),未设置按更新时间排序"""
+
+    __tablename__ = "user_priorities"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    entity_type: Mapped[str] = mapped_column(String(16))  # supplier/customer
+    entity_id: Mapped[int] = mapped_column(Integer)
+    priority: Mapped[int] = mapped_column(Integer, default=5)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class DetailRequest(Base):
+    """匹配结果中他人数据查看全量的申请-审批"""
+
+    __tablename__ = "detail_requests"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    requester_id: Mapped[int] = mapped_column(Integer, index=True)
+    entity_type: Mapped[str] = mapped_column(String(16))  # supplier/customer
+    entity_id: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending/approved/rejected
+    note: Mapped[str] = mapped_column(String(256), default="")
+    requested_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    responded_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class MatchResult(Base):
+    """匹配结果快照:每次为某需求重算时重建"""
+
+    __tablename__ = "match_results"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    demand_type: Mapped[str] = mapped_column(String(16), index=True)  # customer/publication
+    demand_id: Mapped[int] = mapped_column(Integer, index=True)
+    supplier_id: Mapped[int] = mapped_column(Integer, index=True)
+    score: Mapped[int] = mapped_column(Integer, default=0)
+    breakdown: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    reasons: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="new")  # new/viewed/accepted/ignored
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)

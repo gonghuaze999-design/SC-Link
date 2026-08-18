@@ -194,6 +194,36 @@ def review_verification(
     return obj
 
 
+@router.post("/verifications/{vid}/ai-review", response_model=VerificationOut)
+def ai_review_verification(vid: int, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """触发验资材料 AI 初审(Gemini 视觉识别),结果供人工终审参考"""
+    import json
+
+    from ..services.ai_gateway import ai_enabled, review_verification
+    from ..services.files_location import uploads_dir
+
+    if not ai_enabled():
+        raise HTTPException(status_code=400, detail="未配置 Gemini API key,AI 初审暂不可用")
+    obj = db.get(CapitalVerification, vid)
+    if obj is None:
+        raise HTTPException(status_code=404, detail="材料不存在")
+    cust = db.get(Customer, obj.customer_id)
+    if cust is None or not can_access_entity(db, user, "customer", cust.owner_id):
+        raise HTTPException(status_code=404, detail="记录不存在或无权访问")
+    if not obj.file_path:
+        raise HTTPException(status_code=400, detail="该材料未上传文件")
+    result = review_verification(obj.verify_type, str(uploads_dir() / obj.file_path))
+    if result is None:
+        raise HTTPException(status_code=502, detail="AI 识别失败,请稍后重试")
+    flagged = bool(result.get("issues"))
+    obj.ai_report = json.dumps(result, ensure_ascii=False)
+    obj.ai_status = "flagged" if flagged else "passed"
+    write_audit(db, request, user, "update", "verification", str(obj.id), old_value={"ai_status": "pending"}, new_value={"ai_status": obj.ai_status, "report": obj.ai_report[:500]}, detail=f"AI 初审:{obj.ai_status}")
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
 @router.delete("/verifications/{vid}")
 def delete_verification(vid: int, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     obj = db.get(CapitalVerification, vid)

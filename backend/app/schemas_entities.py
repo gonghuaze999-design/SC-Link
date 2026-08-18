@@ -391,3 +391,122 @@ class ShareIn(BaseModel):
 
 class ShareRespond(BaseModel):
     note: str = ""
+
+
+# ---------- 供需看板 ----------
+class PublicationOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    user_id: int
+    type: str
+    product_line_id: int | None
+    title: str
+    quantity: str
+    price_min: float | None
+    price_max: float | None
+    currency: str
+    validity_until: date | None
+    visibility: str
+    status: str
+    content: str
+    intent_modes: list | None
+    goods_preference: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class PublicationIn(BaseModel):
+    type: str = Field(pattern="^(demand|supply)$")
+    product_line_id: int | None = None
+    title: str = Field(min_length=1, max_length=128)
+    quantity: str = ""
+    price_min: float | None = None
+    price_max: float | None = None
+    currency: str = "CNY"
+    validity_until: date | None = None
+    visibility: str = Field(default="public", pattern="^(public|private)$")
+    content: str = ""
+    intent_modes: list | None = None
+    goods_preference: str = ""
+
+
+class PublicationUpdate(BaseModel):
+    title: str | None = None
+    quantity: str | None = None
+    price_min: float | None = None
+    price_max: float | None = None
+    currency: str | None = None
+    validity_until: date | None = None
+    visibility: str | None = Field(default=None, pattern="^(public|private)$")
+    status: str | None = Field(default=None, pattern="^(active|closed|dealt)$")
+    content: str | None = None
+    intent_modes: list | None = None
+    goods_preference: str | None = None
+
+
+# ---------- 优先级 ----------
+class PriorityIn(BaseModel):
+    entity_type: str = Field(pattern="^(supplier|customer)$")
+    entity_id: int
+    priority: int = Field(ge=1, le=9)
+
+
+class PriorityOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    user_id: int
+    entity_type: str
+    entity_id: int
+    priority: int
+
+
+# ---------- 详情申请 ----------
+class DetailRequestOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    requester_id: int
+    entity_type: str
+    entity_id: int
+    status: str
+    note: str
+    requested_at: datetime
+    responded_at: datetime | None
+
+
+class DetailRequestIn(BaseModel):
+    entity_type: str = Field(pattern="^(supplier|customer)$")
+    entity_id: int
+    note: str = ""
+
+
+class DetailRespond(BaseModel):
+    note: str = ""
+
+
+# ---------- 匹配结果 ----------
+class MatchBrief(BaseModel):
+    id: int
+    name: str
+    short_name: str
+    goods_type: str
+    price: float | None
+    currency: str
+    updated_at: datetime
+    owner_name: str
+    full: bool
+
+
+class MatchItem(BaseModel):
+    score: int
+    breakdown: dict
+    reasons: list[str]
+    available_quantity: int
+    entity: dict
+
+
+# ---------- AI ----------
+class ParseRequest(BaseModel):
+    text: str = Field(min_length=5, max_length=2000)

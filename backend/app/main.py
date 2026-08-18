@@ -7,7 +7,7 @@ from sqlalchemy import text
 from .config import settings
 from .database import Base, SessionLocal, engine
 from .models import User
-from .routers import audit, auth, customers, entities, files, shares, users
+from .routers import audit, auth, customers, entities, files, match, publications, shares, users
 from .security import hash_password
 import app.entities  # noqa: F401  注册业务实体模型
 
@@ -33,6 +33,9 @@ def ensure_admin() -> None:
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     ensure_admin()
+    from .scheduler import start_scheduler
+
+    start_scheduler()
     yield
 
 
@@ -60,3 +63,5 @@ app.include_router(entities.router, prefix="/api")
 app.include_router(customers.router, prefix="/api")
 app.include_router(shares.router, prefix="/api")
 app.include_router(files.router, prefix="/api")
+app.include_router(publications.router, prefix="/api")
+app.include_router(match.router, prefix="/api")
