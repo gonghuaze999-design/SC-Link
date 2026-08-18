@@ -35,6 +35,16 @@ const router = createRouter({
           meta: { title: '主体管理' },
         },
         {
+          path: 'orders',
+          component: () => import('../views/OrdersView.vue'),
+          meta: { title: '订单跟踪' },
+        },
+        {
+          path: 'analytics',
+          component: () => import('../views/AnalyticsView.vue'),
+          meta: { title: '分析中台' },
+        },
+        {
           path: 'shares',
           component: () => import('../views/SharesView.vue'),
           meta: { title: '共享管理' },

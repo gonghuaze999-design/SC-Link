@@ -28,8 +28,8 @@ const navGroups = computed<NavGroup[]>(() => [
       { key: 'board', title: '供需看板', path: '/board' },
       { key: 'match', title: '匹配中心', path: '/match' },
       { key: 'entities', title: '主体管理', path: '/entities' },
-      { key: 'orders', title: '订单跟踪', path: '', soon: true },
-      { key: 'analytics', title: '分析中台', path: '', soon: true },
+      { key: 'orders', title: '订单跟踪', path: '/orders' },
+      { key: 'analytics', title: '分析中台', path: '/analytics' },
     ],
   },
   {
