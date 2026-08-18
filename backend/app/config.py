@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
     gemini_api_base: str = ""  # 留空用 Google 官方端点;中转服务时填其基地址
+    ffmpeg_path: str = "ffmpeg"  # 视频验资抽帧;本地为独立静态版绝对路径,云服务器部署时按需配置
 
 
 settings = Settings()

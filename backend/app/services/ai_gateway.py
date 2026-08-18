@@ -129,21 +129,38 @@ def _inline_part(p: Path, mime: str) -> dict:
     return {"inline_data": {"mime_type": mime, "data": b64}}
 
 
+def _video_duration(video: Path) -> float:
+    """用 ffmpeg -i 探测时长(解析 stderr 的 Duration 字段,免去 ffprobe 依赖)"""
+    import re
+
+    try:
+        probe = subprocess.run(
+            [settings.ffmpeg_path, "-i", str(video)],
+            capture_output=True, text=True, timeout=30,
+        )
+        m = re.search(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", probe.stderr or "")
+        if m:
+            h, mm, s = m.groups()
+            return int(h) * 3600 + int(mm) * 60 + float(s)
+    except Exception:
+        pass
+    return 0.0
+
+
 def _extract_frames(video: Path, count: int = 3) -> list[Path]:
     frames: list[Path] = []
     tmp = tempfile.mkdtemp(prefix="sclink_frames_")
     try:
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(video)],
-            capture_output=True, text=True, timeout=30,
-        )
-        duration = float(probe.stdout.strip() or 0)
-        points = sorted({min(duration * f, duration - 0.5) for f in (0.05, 0.5, 0.9)})
+        duration = _video_duration(video)
+        if duration <= 0:
+            points = [0.0]
+        else:
+            points = sorted({min(duration * f, max(duration - 0.5, 0.0)) for f in (0.05, 0.5, 0.9)})
         points = [max(0.0, x) for x in points if x >= 0]
         for i, ts in enumerate(points):
             out = Path(tmp) / f"frame_{i}.jpg"
             subprocess.run(
-                ["ffmpeg", "-v", "error", "-ss", str(ts), "-i", str(video), "-frames:v", "1", "-q:v", "3", str(out)],
+                [settings.ffmpeg_path, "-v", "error", "-ss", str(ts), "-i", str(video), "-frames:v", "1", "-q:v", "3", str(out)],
                 capture_output=True, timeout=60,
             )
             if out.exists():
