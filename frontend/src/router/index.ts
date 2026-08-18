@@ -20,6 +20,16 @@ const router = createRouter({
           meta: { title: '工作台' },
         },
         {
+          path: 'entities',
+          component: () => import('../views/EntitiesView.vue'),
+          meta: { title: '主体管理' },
+        },
+        {
+          path: 'shares',
+          component: () => import('../views/SharesView.vue'),
+          meta: { title: '共享管理' },
+        },
+        {
           path: 'users',
           component: () => import('../views/UsersView.vue'),
           meta: { title: '用户管理', adminOnly: true },

@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..deps import require_admin
+from ..deps import get_current_user, require_admin
 from ..models import User
-from ..schemas import UserCreate, UserOut, UserUpdate
+from ..schemas import UserBrief, UserCreate, UserOut, UserUpdate
 from ..security import hash_password
 from ..services.audit import write_audit
 
@@ -12,6 +12,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 VALID_ROLES = ("admin", "user")
 VALID_STATUSES = ("active", "disabled")
+
+
+@router.get("/options", response_model=list[UserBrief])
+def user_options(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return db.query(User).filter(User.status == "active").order_by(User.id).all()
 
 
 @router.get("", response_model=list[UserOut])

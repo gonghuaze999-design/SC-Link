@@ -27,7 +27,7 @@ const navGroups = computed<NavGroup[]>(() => [
       { key: 'dashboard', title: '工作台', path: '/dashboard' },
       { key: 'board', title: '供需看板', path: '', soon: true },
       { key: 'match', title: '匹配中心', path: '', soon: true },
-      { key: 'entities', title: '主体管理', path: '', soon: true },
+      { key: 'entities', title: '主体管理', path: '/entities' },
       { key: 'orders', title: '订单跟踪', path: '', soon: true },
       { key: 'analytics', title: '分析中台', path: '', soon: true },
     ],
@@ -35,7 +35,7 @@ const navGroups = computed<NavGroup[]>(() => [
   {
     label: '协同与设置',
     items: [
-      { key: 'share', title: '共享管理', path: '', soon: true },
+      { key: 'share', title: '共享管理', path: '/shares' },
       ...(auth.isAdmin
         ? [
             { key: 'users', title: '用户管理', path: '/users' },

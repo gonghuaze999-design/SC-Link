@@ -31,11 +31,25 @@ CUSTOMER_FIELDS = [
 VERIFY_TYPES = ("video", "balance_photo", "bank_certificate", "guarantee_letter")
 
 
+def _attach_verified(db: Session, cust: Customer) -> Customer:
+    has = (
+        db.query(CapitalVerification.id)
+        .filter(
+            CapitalVerification.customer_id == cust.id,
+            CapitalVerification.review_status == "approved",
+        )
+        .first()
+        is not None
+    )
+    cust.verified = has
+    return cust
+
+
 def _customer_or_404(db: Session, customer_id: int, user: User) -> Customer:
     obj = db.get(Customer, customer_id)
     if obj is None or not can_access_entity(db, user, "customer", obj.owner_id):
         raise HTTPException(status_code=404, detail="记录不存在或无权访问")
-    return obj
+    return _attach_verified(db, obj)
 
 
 def _check_version(obj, version: int) -> None:
@@ -67,7 +81,10 @@ def list_customers(
             q = q.filter(Customer.id.in_(sub_ids))
         else:
             q = q.filter(~Customer.id.in_(sub_ids))
-    return q.order_by(Customer.updated_at.desc()).all()
+    rows = q.order_by(Customer.updated_at.desc()).all()
+    for r in rows:
+        _attach_verified(db, r)
+    return rows
 
 
 @router.post("/customers", response_model=CustomerOut, status_code=201)
@@ -78,7 +95,7 @@ def create_customer(body: CustomerIn, request: Request, user: User = Depends(get
     write_audit(db, request, user, "create", "customer", str(obj.id), new_value=body.model_dump(), detail=f"创建客户 {body.name}")
     db.commit()
     db.refresh(obj)
-    return obj
+    return _attach_verified(db, obj)
 
 
 @router.get("/customers/{customer_id}", response_model=CustomerOut)
@@ -107,7 +124,7 @@ def update_customer(
     write_audit(db, request, user, "update", "customer", str(obj.id), old_value=old, new_value=new, detail=f"更新客户 {obj.name}")
     db.commit()
     db.refresh(obj)
-    return obj
+    return _attach_verified(db, obj)
 
 
 @router.delete("/customers/{customer_id}")

@@ -189,6 +189,8 @@ class QuotaUpdate(BaseModel):
 class CustomerOut(BaseModel):
     model_config = {"from_attributes": True}
 
+    verified: bool = False
+
     id: int
     name: str
     credit_code: str

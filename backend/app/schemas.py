@@ -27,6 +27,14 @@ class TokenOut(BaseModel):
     user: UserOut
 
 
+class UserBrief(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    username: str
+    display_name: str
+
+
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str = Field(min_length=8, max_length=64)
