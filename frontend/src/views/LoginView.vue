@@ -53,7 +53,7 @@ async function submit() {
           <label class="block text-sm text-muted mb-2">账号</label>
           <input
             v-model="username"
-            class="w-full border border-line rounded-xl px-5 py-3.5.5 text-[15px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
+            class="w-full h-[56px] border border-line rounded-xl px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
             placeholder="请输入账号"
           />
         </div>
@@ -62,7 +62,7 @@ async function submit() {
           <input
             v-model="password"
             type="password"
-            class="w-full border border-line rounded-xl px-5 py-3.5.5 text-[15px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
+            class="w-full h-[56px] border border-line rounded-xl px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
             placeholder="请输入密码"
           />
         </div>
