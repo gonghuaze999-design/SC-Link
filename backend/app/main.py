@@ -7,8 +7,9 @@ from sqlalchemy import text
 from .config import settings
 from .database import Base, SessionLocal, engine
 from .models import User
-from .routers import audit, auth, users
+from .routers import audit, auth, customers, entities, files, shares, users
 from .security import hash_password
+import app.entities  # noqa: F401  注册业务实体模型
 
 
 def ensure_admin() -> None:
@@ -55,3 +56,7 @@ def health():
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")
+app.include_router(entities.router, prefix="/api")
+app.include_router(customers.router, prefix="/api")
+app.include_router(shares.router, prefix="/api")
+app.include_router(files.router, prefix="/api")

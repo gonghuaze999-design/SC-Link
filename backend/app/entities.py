@@ -1,0 +1,243 @@
+from datetime import date, datetime
+
+from sqlalchemy import JSON, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from .database import Base
+
+
+class ProductLine(Base):
+    __tablename__ = "product_lines"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(64), unique=True)
+    category: Mapped[str] = mapped_column(String(32), default="整机")  # 整机/板卡/其他
+    status: Mapped[str] = mapped_column(String(16), default="active")
+    remark: Mapped[str] = mapped_column(String(256), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class OverseasChain(Base):
+    """海外链路方:同一条链路下可有多个国内供货方代表"""
+
+    __tablename__ = "overseas_chains"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(128))
+    region: Mapped[str] = mapped_column(String(128), default="")
+    contact_person: Mapped[str] = mapped_column(String(64), default="")
+    contact_info: Mapped[str] = mapped_column(String(256), default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    owner_id: Mapped[int] = mapped_column(Integer, index=True)
+    last_editor_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class Supplier(Base):
+    __tablename__ = "suppliers"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    # 基础信息
+    name: Mapped[str] = mapped_column(String(128), index=True)
+    short_name: Mapped[str] = mapped_column(String(64), default="")
+    reg_location: Mapped[str] = mapped_column(String(128), default="")
+    credit_code: Mapped[str] = mapped_column(String(64), default="")
+    established_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    registered_capital: Mapped[str] = mapped_column(String(64), default="")
+    equity_structure: Mapped[str] = mapped_column(Text, default="")
+    contacts: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{name,title,phone,wechat,email}]
+    remark: Mapped[str] = mapped_column(Text, default="")
+    # 链路归属
+    chain_id: Mapped[int | None] = mapped_column(ForeignKey("overseas_chains.id"), nullable=True, index=True)
+    chain_role: Mapped[str] = mapped_column(String(32), default="")  # 一手/二手/居间代表/其他
+    parent_supplier_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # 交易属性
+    procurement_modes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [预付款, 信用证-国内, 信用证-跨境]
+    goods_type: Mapped[str] = mapped_column(String(16), default="现货")  # 期货/现货/准现货
+    price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    currency: Mapped[str] = mapped_column(String(8), default="CNY")
+    price_valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    moq: Mapped[str] = mapped_column(String(64), default="")
+    delivery_cycle: Mapped[str] = mapped_column(String(64), default="")
+    payment_terms: Mapped[str] = mapped_column(String(256), default="")
+    invoice_type: Mapped[str] = mapped_column(String(64), default="")
+    # 反向保障
+    guarantee_type: Mapped[str] = mapped_column(String(32), default="")  # 保函/先开后开/无/其他
+    guarantee_ratio: Mapped[str] = mapped_column(String(32), default="")
+    guarantee_issuer: Mapped[str] = mapped_column(String(16), default="")  # 企业/银行/保险公司
+    guarantee_issuer_name: Mapped[str] = mapped_column(String(128), default="")
+    guarantee_valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    financing_capacity: Mapped[str] = mapped_column(String(128), default="")
+    guarantee_notes: Mapped[str] = mapped_column(Text, default="")
+    # 合作评价
+    coop_status: Mapped[str] = mapped_column(String(16), default="意向")  # 意向/洽谈中/合作中/暂停/终止
+    deal_count: Mapped[int] = mapped_column(Integer, default=0)
+    deal_amount: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)
+    fulfillment_rate: Mapped[str] = mapped_column(String(16), default="")
+    breach_count: Mapped[int] = mapped_column(Integer, default=0)
+    credit_rating: Mapped[str] = mapped_column(String(8), default="")
+    risk_notes: Mapped[str] = mapped_column(Text, default="")
+    # 归属与版本
+    owner_id: Mapped[int] = mapped_column(Integer, index=True)
+    last_editor_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class SupplierQuota(Base):
+    __tablename__ = "supplier_quotas"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    supplier_id: Mapped[int] = mapped_column(ForeignKey("suppliers.id"), index=True)
+    product_line_id: Mapped[int | None] = mapped_column(ForeignKey("product_lines.id"), nullable=True)
+    batch_no: Mapped[str] = mapped_column(String(64), default="")
+    quantity: Mapped[int] = mapped_column(Integer, default=0)
+    used_quantity: Mapped[int] = mapped_column(Integer, default=0)
+    quota_start_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    quota_end_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="available")  # available/locked/used_up/expired
+    remark: Mapped[str] = mapped_column(String(256), default="")
+    created_by: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class Customer(Base):
+    __tablename__ = "customers"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    # 基础信息
+    name: Mapped[str] = mapped_column(String(128), index=True)
+    credit_code: Mapped[str] = mapped_column(String(64), default="")
+    reg_location: Mapped[str] = mapped_column(String(128), default="")
+    established_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    registered_capital: Mapped[str] = mapped_column(String(64), default="")
+    industry: Mapped[str] = mapped_column(String(64), default="")
+    contacts: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    remark: Mapped[str] = mapped_column(Text, default="")
+    # 证照与账户(签约时维护)
+    license_file: Mapped[str] = mapped_column(String(256), default="")
+    account_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {户名,开户行,账号}
+    invoice_info: Mapped[str] = mapped_column(String(256), default="")
+    # 交易意向
+    intent_modes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [预付款, 信用证-国内, 信用证-跨境]
+    intent_products: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{product_line_id, quantity}]
+    intent_quantity: Mapped[str] = mapped_column(String(64), default="")
+    budget_range: Mapped[str] = mapped_column(String(128), default="")
+    expected_deal_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    goods_preference: Mapped[str] = mapped_column(String(16), default="")  # 现货/期货
+    # 客户画像
+    customer_type: Mapped[str] = mapped_column(String(32), default="")  # 终端使用方/贸易商/国资平台/民营
+    purpose: Mapped[str] = mapped_column(String(32), default="")  # 自用/转售
+    decision_chain: Mapped[str] = mapped_column(String(256), default="")
+    payment_habit: Mapped[str] = mapped_column(String(128), default="")
+    risk_preference: Mapped[str] = mapped_column(String(128), default="")
+    value_grade: Mapped[str] = mapped_column(String(4), default="")  # A/B/C
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # 归属与版本
+    owner_id: Mapped[int] = mapped_column(Integer, index=True)
+    last_editor_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class CapitalVerification(Base):
+    """验资材料:四种方式,每种独立建档"""
+
+    __tablename__ = "capital_verifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"), index=True)
+    verify_type: Mapped[str] = mapped_column(String(32))  # video/balance_photo/bank_certificate/guarantee_letter
+    file_name: Mapped[str] = mapped_column(String(256), default="")
+    file_path: Mapped[str] = mapped_column(String(256), default="")
+    uploaded_by: Mapped[int] = mapped_column(Integer, default=0)
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    material_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    amount: Mapped[str] = mapped_column(String(64), default="")
+    ai_status: Mapped[str] = mapped_column(String(16), default="pending")  # pending/passed/flagged
+    ai_report: Mapped[str] = mapped_column(Text, default="")
+    review_status: Mapped[str] = mapped_column(String(16), default="pending")  # pending/approved/rejected
+    reviewed_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    review_note: Mapped[str] = mapped_column(String(256), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class MiddleLayer(Base):
+    __tablename__ = "middle_layers"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(128), index=True)
+    credit_code: Mapped[str] = mapped_column(String(64), default="")
+    entity_nature: Mapped[str] = mapped_column(String(16), default="")  # 国资/民营/混合/其他
+    layer_no: Mapped[int] = mapped_column(Integer, default=1)  # 第1层/第2层
+    reg_location: Mapped[str] = mapped_column(String(128), default="")
+    registered_capital: Mapped[str] = mapped_column(String(64), default="")
+    contact_info: Mapped[str] = mapped_column(String(256), default="")
+    purposes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [代开信用证,开保函,居间分账,意向金截流,其他]
+    fee_rate: Mapped[str] = mapped_column(String(64), default="")
+    settlement: Mapped[str] = mapped_column(String(128), default="")
+    coop_status: Mapped[str] = mapped_column(String(16), default="意向")
+    credit_rating: Mapped[str] = mapped_column(String(8), default="")
+    risk_notes: Mapped[str] = mapped_column(Text, default="")
+    remark: Mapped[str] = mapped_column(Text, default="")
+    owner_id: Mapped[int] = mapped_column(Integer, index=True)
+    last_editor_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class Communication(Base):
+    """沟通记录:只增不改,append-only"""
+
+    __tablename__ = "communications"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    entity_type: Mapped[str] = mapped_column(String(16), index=True)  # supplier/customer/middle
+    entity_id: Mapped[int] = mapped_column(Integer, index=True)
+    comm_time: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    channel: Mapped[str] = mapped_column(String(16), default="")  # 电话/微信/面谈/会议/其他
+    participants: Mapped[str] = mapped_column(String(128), default="")
+    content: Mapped[str] = mapped_column(Text, default="")
+    next_step: Mapped[str] = mapped_column(String(256), default="")
+    follow_up_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    attachment: Mapped[str] = mapped_column(String(256), default="")
+    created_by: Mapped[int] = mapped_column(Integer, default=0)
+    created_by_name: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class DataShare(Base):
+    """数据共享:申请-审批制"""
+
+    __tablename__ = "data_shares"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    requester_id: Mapped[int] = mapped_column(Integer, index=True)
+    target_id: Mapped[int] = mapped_column(Integer, index=True)
+    scopes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [all]/[supplier, customer, middle]
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending/active/rejected/cancelled
+    note: Mapped[str] = mapped_column(String(256), default="")
+    requested_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    responded_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    responded_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
+class StoredFile(Base):
+    __tablename__ = "stored_files"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    stored_name: Mapped[str] = mapped_column(String(128), unique=True)
+    original_name: Mapped[str] = mapped_column(String(256), default="")
+    uploader_id: Mapped[int] = mapped_column(Integer, default=0)
+    entity_type: Mapped[str] = mapped_column(String(16), default="")
+    entity_id: Mapped[int] = mapped_column(Integer, default=0)
+    size: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
