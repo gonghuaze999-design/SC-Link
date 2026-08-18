@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SC-Link 供应链协同分析中台 · 设计方案 v0.2</title>
+<style>
+  :root{
+    --navy:#0F172A; --blue:#2563EB; --cyan:#06B6D4; --bg:#F5F7FB; --card:#FFFFFF;
+    --ink:#1E293B; --muted:#64748B; --line:#E2E8F0;
+    --green:#10B981; --amber:#F59E0B; --red:#EF4444;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+       background:var(--bg); color:var(--ink); line-height:1.75; font-size:15px;}
+  a{color:var(--blue); text-decoration:none;}
+
+  /* 封面 */
+  .cover{background:linear-gradient(135deg,#0F172A 0%,#13264F 55%,#1E3A8A 100%);
+         color:#fff; padding:72px 8vw 64px; position:relative; overflow:hidden;}
+  .cover::after{content:""; position:absolute; right:-120px; top:-120px; width:420px; height:420px;
+         border-radius:50%; border:1px solid rgba(6,182,212,.35);
+         box-shadow:0 0 0 60px rgba(6,182,212,.08),0 0 0 120px rgba(6,182,212,.05);}
+  .cover .tag{display:inline-block; font-size:12px; letter-spacing:2px; color:var(--cyan);
+         border:1px solid rgba(6,182,212,.5); border-radius:20px; padding:4px 14px; margin-bottom:20px;}
+  .cover h1{font-size:40px; font-weight:700; letter-spacing:1px;}
+  .cover .sub{color:#93A6C8; margin-top:14px; font-size:16px; max-width:760px;}
+  .cover .meta{margin-top:32px; font-size:13px; color:#7E93B8;}
+  .cover .meta span{margin-right:24px;}
+
+  /* 目录 */
+  .toc{max-width:1120px; margin:-36px auto 0; background:var(--card); border-radius:14px;
+       box-shadow:0 12px 32px rgba(15,23,42,.10); padding:28px 36px; position:relative;}
+  .toc h2{font-size:15px; color:var(--muted); font-weight:600; margin-bottom:14px;}
+  .toc-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px 24px;}
+  .toc-grid a{color:var(--ink); font-size:13.5px; padding:6px 0; border-bottom:1px dashed var(--line);}
+  .toc-grid a b{color:var(--blue); font-weight:600; margin-right:8px;}
+
+  /* 主体 */
+  .wrap{max-width:1120px; margin:0 auto; padding:40px 20px 80px;}
+  section{margin-bottom:72px;}
+  .sec-head{display:flex; align-items:center; gap:14px; margin-bottom:8px;}
+  .sec-num{min-width:40px; height:40px; border-radius:10px; background:var(--navy); color:#fff;
+           display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px;}
+  h2.sec-title{font-size:25px; font-weight:700;}
+  .sec-desc{color:var(--muted); font-size:14px; margin:4px 0 24px 54px;}
+  h3{font-size:18px; font-weight:700; margin:32px 0 12px; padding-left:12px; border-left:4px solid var(--blue);}
+  h4{font-size:15px; font-weight:700; margin:20px 0 8px; color:var(--navy);}
+  p{margin:8px 0;}
+  ul,ol{padding-left:24px; margin:8px 0;}
+  li{margin:4px 0;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:22px 26px; margin:16px 0;}
+  .callout{border-left:4px solid var(--cyan); background:#F0F9FF; border-radius:0 10px 10px 0; padding:14px 18px; margin:16px 0; font-size:14px;}
+  .callout.warn{border-color:var(--amber); background:#FFFBEB;}
+  .callout.ok{border-color:var(--green); background:#ECFDF5;}
+  .callout b{color:var(--navy);}
+
+  /* 表格 */
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px; background:#fff;}
+  th{background:var(--navy); color:#fff; text-align:left; padding:10px 12px; font-weight:600; white-space:nowrap;}
+  td{border-bottom:1px solid var(--line); padding:9px 12px; vertical-align:top;}
+  tr:nth-child(even) td{background:#FAFBFD;}
+  .tbl-cap{font-size:13px; color:var(--muted); margin-top:-8px;}
+
+  /* 图示 */
+  .fig{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; margin:20px 0;}
+  .fig-cap{font-size:13px; color:var(--muted); text-align:center; margin-top:10px;}
+  .fig-cap b{color:var(--navy);}
+  svg text{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+
+  /* 色板 */
+  .swatches{display:flex; flex-wrap:wrap; gap:14px; margin:16px 0;}
+  .sw{width:150px; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff;}
+  .sw .c{height:56px;}
+  .sw .l{padding:8px 10px; font-size:11.5px; color:var(--muted);}
+  .sw .l b{display:block; color:var(--ink); font-size:12.5px;}
+
+  /* UI 效果图 */
+  .mock-grid{display:flex; flex-wrap:wrap; gap:26px; margin:20px 0;}
+  .mock{width:410px; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden;
+        box-shadow:0 10px 28px rgba(15,23,42,.10); font-size:11px; color:#334155;}
+  .mock-top{display:flex; align-items:center; gap:5px; padding:8px 12px; background:#F1F5F9; border-bottom:1px solid var(--line);}
+  .dot{width:8px; height:8px; border-radius:50%; background:#CBD5E1; display:inline-block;}
+  .dot.r{background:#FCA5A5;} .dot.y{background:#FCD34D;} .dot.g{background:#86EFAC;}
+  .mock-url{flex:1; background:#fff; border-radius:5px; font-size:9.5px; color:#94A3B8; padding:2px 10px; margin-left:4px;}
+  .mock-body{padding:14px;}
+  .mock-cap{font-size:13px; color:var(--muted); text-align:center; margin-top:10px;}
+  .mock-cap b{color:var(--navy);}
+  .m-btn{display:inline-block; background:var(--blue); color:#fff; border-radius:6px; padding:4px 12px; font-size:10.5px;}
+  .m-btn.ghost{background:#fff; color:var(--blue); border:1px solid var(--blue);}
+  .m-tag{display:inline-block; font-size:9px; border-radius:4px; padding:1px 7px; margin-left:5px;}
+  .m-tag.blue{background:#EFF6FF; color:var(--blue);} .m-tag.green{background:#ECFDF5; color:#059669;}
+  .m-tag.amber{background:#FFFBEB; color:#D97706;} .m-tag.red{background:#FEF2F2; color:#DC2626;}
+  .m-tag.gray{background:#F1F5F9; color:#64748B;}
+  .m-row{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid #F1F5F9;}
+  .m-sidebar{width:96px; background:var(--navy); border-radius:8px 0 0 8px; color:#93A6C8; padding:10px 0; text-align:center; flex-shrink:0;}
+  .m-sidebar .on{color:#fff; background:#1E3A8A; border-radius:5px; margin:0 6px; padding:4px 0;}
+  .m-sidebar div{padding:4px 0; font-size:9.5px;}
+  .m-sidebar .logo{color:#fff; font-weight:700; font-size:10px; margin-bottom:8px;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px;}
+  @media(max-width:900px){.grid2,.grid3,.toc-grid{grid-template-columns:1fr;}}
+
+  .roadmap td:first-child{white-space:nowrap; font-weight:600; color:var(--blue);}
+  footer{margin-top:60px; padding:28px; text-align:center; color:var(--muted); font-size:13px; border-top:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<!-- ============ 封面 ============ -->
+<div class="cover">
+  <span class="tag">DESIGN PROPOSAL · v0.2</span>
+  <h1>SC-Link · 供应链协同分析中台</h1>
+  <div class="sub">面向 B300 服务器(未来扩展至更多板卡/整机型号)的供应链上下游协同管理系统:<br>
+  主体信息管理 → 供需看板发布 → 自动上下游匹配 → 订单全程跟踪 → 量化分析中台,全操作留痕。</div>
+  <div class="meta">
+    <span>用途:内部 3-5 人异地协同</span>
+    <span>部署:腾讯云轻量服务器</span>
+    <span>文档日期:2026-08-18</span>
+    <span>状态:待评审确认</span>
+  </div>
+</div>
+
+<!-- ============ 目录 ============ -->
+<div class="toc">
+  <h2>目 录</h2>
+  <div class="toc-grid">
+    <a href="#s1"><b>01</b>项目概述与设计原则</a>
+    <a href="#s2"><b>02</b>总体架构与部署方案</a>
+    <a href="#s3"><b>03</b>用户体系 · 权限 · 数据共享 · 并发兜底</a>
+    <a href="#s4"><b>04</b>供应链主体管理设计</a>
+    <a href="#s5"><b>05</b>核心功能设计(看板/匹配/优先级/分析/订单)</a>
+    <a href="#s6"><b>06</b>AI 全域智能化设计(匹配/跟单/风控)</a>
+    <a href="#s7"><b>07</b>数据模型与审计日志</a>
+    <a href="#s8"><b>08</b>后台任务与通知机制</a>
+    <a href="#s9"><b>09</b>UI/UX 设计规范与效果图</a>
+    <a href="#s10"><b>10</b>安全设计</a>
+    <a href="#s11"><b>11</b>实施路线图</a>
+    <a href="#s12"><b>12</b>风险与应对</a>
+    <a href="#s13"><b>13</b>待确认事项清单</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ============ 01 项目概述 ============ -->
+<section id="s1">
+  <div class="sec-head"><div class="sec-num">01</div><h2 class="sec-title">项目概述与设计原则</h2></div>
+  <div class="sec-desc">项目定位、核心目标、以及贯穿全部设计决策的基本原则。</div>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>背景</h4>
+      <p>团队从事 B300 服务器及未来其他硬件板卡/整机的供应链上下游撮合业务。3-5 名成员分布在不同地区,需要共同维护一份数据库;任何账户的维护、更新都必须留有日志。</p>
+      <p>供应链分为三层:上游供货方(背后是海外链路方)、中间层(代开证/保函/居间等,1-2 层、国资居多)、下游客户(采购方)。</p>
+    </div>
+    <div class="card">
+      <h4>系统目标</h4>
+      <ul>
+        <li>三层主体信息的<b>分类化、结构化</b>管理与定期维护;</li>
+        <li>采购需求与供货信息的<b>看板发布</b>与全员可见;</li>
+        <li>基于数据库的<b>上游-下游自动匹配</b>与衔接;</li>
+        <li><b>订单全流程跟踪</b>(货源 / 资金 / 到货 / 交付 / 违约);</li>
+        <li><b>量化分析中台</b>,呈现供应链变化与成交情况;</li>
+        <li>全员操作<b>全程留痕</b>,可追溯、可审计。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4>设计原则</h4>
+    <ul>
+      <li><b>云端轻量部署</b>:单台腾讯云轻量服务器 + Docker 一键部署,7×24 后台运行,不用微服务、不用 K8s;</li>
+      <li><b>数据归属清晰</b>:每个用户独立维护自己的数据,共享需申请-审批,管理员全局可见;</li>
+      <li><b>审计先行</b>:一切修改写入审计日志(谁、何时、改了什么、改前/改后值),日志只增不改;</li>
+      <li><b>产品线可扩展</b>:型号作为独立维度,B300 是第一个产品线,新增板卡/整机型号无需改代码;</li>
+      <li><b>并发兜底</b>:共享数据共同维护场景下,用版本号乐观锁 + 编辑心跳 + 事务保护,杜绝互相覆盖;</li>
+      <li><b>UI 简洁高级</b>:科技感、清爽、克制的色调,不因内部工具而马虎;</li>
+      <li><b>拒绝过度设计</b>:3-5 人规模,单体应用,能用简单方案解决就不上复杂组件。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 02 架构与部署 ============ -->
+<section id="s2">
+  <div class="sec-head"><div class="sec-num">02</div><h2 class="sec-title">总体架构与部署方案</h2></div>
+  <div class="sec-desc">单体应用 + 单台云服务器 + Docker Compose,兼顾简单与可靠。</div>
+
+  <h3>2.1 部署架构图</h3>
+  <div class="fig">
+    <svg viewBox="0 0 940 440" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <!-- 用户区 -->
+      <text x="90" y="34" font-size="13" fill="#64748B" font-weight="bold">异地用户(3-5人)</text>
+      <g font-size="11">
+        <rect x="40" y="50" width="140" height="40" rx="8" fill="#fff" stroke="#2563EB"/>
+        <text x="110" y="75" text-anchor="middle" fill="#1E293B">用户 A · 浏览器</text>
+        <rect x="40" y="110" width="140" height="40" rx="8" fill="#fff" stroke="#2563EB"/>
+        <text x="110" y="135" text-anchor="middle" fill="#1E293B">用户 B · 浏览器</text>
+        <rect x="40" y="170" width="140" height="40" rx="8" fill="#fff" stroke="#2563EB"/>
+        <text x="110" y="195" text-anchor="middle" fill="#1E293B">用户 C · 浏览器</text>
+      </g>
+
+      <!-- 云服务器 -->
+      <rect x="250" y="40" width="410" height="370" rx="14" fill="#F8FAFC" stroke="#06B6D4" stroke-dasharray="7 5"/>
+      <text x="455" y="64" text-anchor="middle" font-size="13" fill="#0891B2" font-weight="bold">腾讯云轻量应用服务器 · 新加坡节点(Docker Compose)</text>
+
+      <rect x="275" y="82" width="360" height="46" rx="8" fill="#0F172A"/>
+      <text x="455" y="101" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">Nginx</text>
+      <text x="455" y="118" text-anchor="middle" font-size="10" fill="#93A6C8">HTTPS / WSS 反向代理 · 静态资源 · 附件访问控制</text>
+
+      <rect x="275" y="150" width="170" height="70" rx="8" fill="#fff" stroke="#2563EB"/>
+      <text x="360" y="176" text-anchor="middle" font-size="11.5" fill="#1E293B" font-weight="bold">前端静态资源</text>
+      <text x="360" y="194" text-anchor="middle" font-size="10" fill="#64748B">Vue 3 SPA</text>
+      <text x="360" y="208" text-anchor="middle" font-size="10" fill="#64748B">Tailwind + ECharts</text>
+
+      <rect x="465" y="150" width="170" height="110" rx="8" fill="#fff" stroke="#2563EB"/>
+      <text x="550" y="176" text-anchor="middle" font-size="11.5" fill="#1E293B" font-weight="bold">后端 API</text>
+      <text x="550" y="193" text-anchor="middle" font-size="10" fill="#64748B">FastAPI(Python 3.11)</text>
+      <text x="550" y="209" text-anchor="middle" font-size="10" fill="#64748B">JWT 鉴权 · 业务逻辑</text>
+      <text x="550" y="225" text-anchor="middle" font-size="10" fill="#64748B">WebSocket 通知</text>
+      <text x="550" y="241" text-anchor="middle" font-size="10" fill="#64748B">APScheduler 定时任务</text>
+
+      <rect x="275" y="245" width="170" height="70" rx="8" fill="#fff" stroke="#2563EB"/>
+      <text x="360" y="271" text-anchor="middle" font-size="11.5" fill="#1E293B" font-weight="bold">MySQL 8.0</text>
+      <text x="360" y="289" text-anchor="middle" font-size="10" fill="#64748B">业务库 + 审计日志库</text>
+      <text x="360" y="303" text-anchor="middle" font-size="10" fill="#64748B">每日 03:00 全量备份</text>
+
+      <rect x="465" y="282" width="170" height="50" rx="8" fill="#fff" stroke="#94A3B8"/>
+      <text x="550" y="302" text-anchor="middle" font-size="11.5" fill="#1E293B" font-weight="bold">附件存储</text>
+      <text x="550" y="318" text-anchor="middle" font-size="10" fill="#64748B">/opt/sc-link/data(本地磁盘)</text>
+
+      <rect x="275" y="338" width="360" height="48" rx="8" fill="#EFF6FF" stroke="#2563EB"/>
+      <text x="455" y="358" text-anchor="middle" font-size="11" fill="#1D4ED8" font-weight="bold">后台任务:匹配跑批 · 配额/验资到期提醒 · 看板自动关停</text>
+      <text x="455" y="374" text-anchor="middle" font-size="10" fill="#64748B">与后端同进程(APScheduler),无需额外组件</text>
+
+      <!-- 备份区 -->
+      <rect x="710" y="82" width="200" height="120" rx="8" fill="#ECFDF5" stroke="#10B981"/>
+      <text x="810" y="110" text-anchor="middle" font-size="12" fill="#047857" font-weight="bold">每日备份(异地容灾)</text>
+      <text x="810" y="132" text-anchor="middle" font-size="10" fill="#334155">服务器本地快照(保留 30 天)</text>
+      <text x="810" y="152" text-anchor="middle" font-size="10" fill="#334155">+ 腾讯云 COS 冷备</text>
+      <text x="810" y="176" text-anchor="middle" font-size="10" fill="#64748B">一键恢复脚本</text>
+
+      <!-- 连线 -->
+      <g stroke="#94A3B8" stroke-width="1.4" fill="none">
+        <path d="M180 70 L275 105"/>
+        <path d="M180 130 L275 185"/>
+        <path d="M180 190 L275 280"/>
+      </g>
+      <text x="215" y="62" font-size="9.5" fill="#64748B">① HTTPS/WSS</text>
+      <g stroke="#2563EB" stroke-width="1.3" fill="none">
+        <path d="M360 150 L360 128"/>
+        <path d="M465 205 L445 205"/>
+        <path d="M360 245 L360 220"/>
+        <path d="M465 282 L465 260"/>
+        <path d="M360 315 L385 338"/>
+        <path d="M455 386 L455 386"/>
+      </g>
+      <g stroke="#10B981" stroke-width="1.3" fill="none">
+        <path d="M445 280 L710 130"/>
+      </g>
+      <text x="560" y="208" font-size="9" fill="#64748B">REST</text>
+      <text x="375" y="212" font-size="9" fill="#64748B">SQL</text>
+      <text x="382" y="306" font-size="9" fill="#64748B">文件</text>
+      <text x="468" y="270" font-size="9" fill="#64748B">文件</text>
+      <text x="560" y="345" font-size="9" fill="#64748B">定时触发</text>
+      <text x="565" y="130" font-size="9" fill="#047857">⑦ 备份上传</text>
+    </svg>
+    <div class="fig-cap"><b>图 2-1</b> 部署架构:单台轻量服务器承载全部组件,异地用户经 HTTPS 访问,每日自动备份至 COS</div>
+  </div>
+
+  <h3>2.2 技术选型</h3>
+  <table>
+    <tr><th style="width:130px">层</th><th style="width:260px">选型</th><th>理由</th></tr>
+    <tr><td>前端</td><td>Vue 3 + TypeScript + Vite<br>Tailwind CSS + ECharts</td><td>生态成熟、开发效率高;构建产物为纯静态文件,由 Nginx 托管;ECharts 支撑分析看板图表;自研组件保证"科技感"定制化,不套模板。</td></tr>
+    <tr><td>后端</td><td>Python 3.11 + FastAPI<br>SQLAlchemy + Alembic</td><td>开发快、异步性能足够;内置 WebSocket(实时通知);3-5 人并发量级毫无压力。</td></tr>
+    <tr><td>数据库</td><td>MySQL 8.0</td><td>腾讯云生态成熟、运维简单、数据量级(万级记录)完全够用;备选 PostgreSQL。</td></tr>
+    <tr><td>定时任务</td><td>APScheduler</td><td>与后端同进程运行,零额外组件,满足跑批/提醒/备份需求。</td></tr>
+    <tr><td>认证</td><td>JWT + bcrypt 密码哈希</td><td>无状态认证,简单可靠;支持登录失败锁定。</td></tr>
+    <tr><td>部署</td><td>Docker Compose<br>(nginx + api + mysql 三容器)</td><td>一条命令起服务、升级回滚方便;配置文件化,便于迁移。</td></tr>
+    <tr><td>域名/证书</td><td>域名 + Let's Encrypt 免费 SSL</td><td>HTTPS 强制,自动续期。</td></tr>
+  </table>
+
+  <h3>2.3 部署资源与成本估算</h3>
+  <table>
+    <tr><th>资源</th><th>规格建议</th><th>费用估算</th></tr>
+    <tr><td>腾讯云轻量应用服务器</td><td>2 核 4G / 6M 带宽 / 60G SSD(<b>新加坡节点</b>)</td><td>约 ¥100-150/月(活动价更低)</td></tr>
+    <tr><td>域名</td><td>已有或新购 .com/.cn</td><td>约 ¥60/年</td></tr>
+    <tr><td>SSL 证书</td><td>Let's Encrypt 自动签发续期</td><td>免费</td></tr>
+    <tr><td>COS 备份存储</td><td>低频存储,约 1GB/月</td><td>&lt; ¥5/月</td></tr>
+    <tr><td>AI 大模型 API</td><td>Gemini 2.5 Flash 按量付费(调用经 AI 网关路由去重,以短文本抽取为主)</td><td>约 ¥30-150/月</td></tr>
+    <tr><td>OCR 识别</td><td>Gemini 原生视觉识别,无单独计费;若加腾讯云 OCR 双通道校验</td><td>约 ¥0-50/月</td></tr>
+    <tr><td><b>合计</b></td><td colspan="2"><b>约 ¥140-360/月,无其他隐藏成本;AI 成本设月度封顶告警</b></td></tr>
+  </table>
+
+  <div class="callout ok"><b>运维要点:</b>系统 7×24 后台运行;每日 03:00 自动全量备份(本地保留 30 天 + COS 冷备);Docker 镜像升级一键完成;日志按周轮转。对 3-5 人团队,月度巡检一次即可。<br><b>地域说明:</b>新加坡节点可直连 Google 生态服务(Gemini API 无需任何中转);国内用户访问延迟约 50-100ms,页面交互无明显影响,验资视频等大文件上传采用分片续传。</div>
+</section>
+
+<!-- ============ 03 用户体系 ============ -->
+<section id="s3">
+  <div class="sec-head"><div class="sec-num">03</div><h2 class="sec-title">用户体系 · 权限 · 数据共享 · 并发兜底</h2></div>
+  <div class="sec-desc">两级角色、数据归属清晰、共享有据、多人共改不丢数据。</div>
+
+  <h3>3.1 角色与权限</h3>
+  <table>
+    <tr><th style="width:110px">角色</th><th>数据可见范围</th><th>操作权限</th></tr>
+    <tr><td><b>管理员</b></td><td>全局:所有用户维护的全部数据(上游/中间层/下游/看板/订单)</td><td>除普通用户全部功能外,还可:用户账号管理(创建/停用/重置密码)、查看全部共享关系与审计日志、协助修正他人数据(操作同样留痕)、仲裁共享冲突。</td></tr>
+    <tr><td><b>一般用户</b></td><td>默认:仅自己创建维护的数据 + 全员公开的看板发布</td><td>维护主体信息、发布看板、使用匹配、设置优先级、跟踪订单、申请/接受数据共享、查看自己数据的审计日志。</td></tr>
+  </table>
+
+  <div class="callout"><b>数据归属规则:</b>每一条主体记录(供货方/客户/中间层/订单等)都带 <b>owner(创建人)</b> 字段,后端强制校验——权限校验在服务端执行,前端隐藏按钮只是体验优化,不是安全边界。</div>
+
+  <h3>3.2 数据共享机制(申请-审批制)</h3>
+  <div class="fig">
+    <svg viewBox="0 0 940 400" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <rect x="340" y="18" width="260" height="52" rx="9" fill="#0F172A"/>
+      <text x="470" y="40" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="bold">管理员</text>
+      <text x="470" y="58" text-anchor="middle" font-size="10" fill="#93A6C8">全局可见 · 无需申请 · 可协助维护(留痕)</text>
+
+      <g stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="5 4" fill="none">
+        <path d="M400 70 L140 130"/><path d="M470 70 L470 130"/><path d="M540 70 L800 130"/>
+      </g>
+
+      <rect x="40" y="130" width="280" height="130" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="180" y="155" text-anchor="middle" font-size="12.5" fill="#1D4ED8" font-weight="bold">用户 A 数据域</text>
+      <text x="180" y="176" text-anchor="middle" font-size="10" fill="#64748B">上游供货方 · 下游客户 · 中间层 · 订单</text>
+      <text x="180" y="196" text-anchor="middle" font-size="10" fill="#64748B">默认仅本人可见、可维护</text>
+
+      <rect x="330" y="130" width="280" height="130" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="470" y="155" text-anchor="middle" font-size="12.5" fill="#1D4ED8" font-weight="bold">用户 B 数据域</text>
+      <text x="470" y="176" text-anchor="middle" font-size="10" fill="#64748B">上游供货方 · 下游客户 · 中间层 · 订单</text>
+      <text x="470" y="196" text-anchor="middle" font-size="10" fill="#64748B">默认仅本人可见、可维护</text>
+
+      <rect x="620" y="130" width="280" height="130" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="760" y="155" text-anchor="middle" font-size="12.5" fill="#1D4ED8" font-weight="bold">用户 C 数据域</text>
+      <text x="760" y="176" text-anchor="middle" font-size="10" fill="#64748B">上游供货方 · 下游客户 · 中间层 · 订单</text>
+      <text x="760" y="196" text-anchor="middle" font-size="10" fill="#64748B">默认仅本人可见、可维护</text>
+
+      <!-- 共享箭头 -->
+      <g stroke="#2563EB" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+        <path d="M470 230 L470 300"/>
+      </g>
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2563EB"/></marker></defs>
+      <text x="492" y="258" font-size="10.5" fill="#1D4ED8" font-weight="bold">A 申请共享(可选范围:全部 / 上游 / 下游 / 中间层)</text>
+      <text x="492" y="276" font-size="10.5" fill="#1D4ED8" font-weight="bold">B 批准 → 生效;任一方可发起解除,对方确认</text>
+
+      <rect x="140" y="302" width="660" height="78" rx="12" fill="#F0F9FF" stroke="#06B6D4" stroke-dasharray="7 5"/>
+      <text x="470" y="328" text-anchor="middle" font-size="12" fill="#0E7490" font-weight="bold">A · B 共享数据域(共同可见、共同维护)</text>
+      <text x="470" y="350" text-anchor="middle" font-size="10.5" fill="#334155">每条记录标注「最后维护人 + 时间」· 版本号乐观锁 · 编辑心跳 · 全量审计日志</text>
+      <text x="470" y="368" text-anchor="middle" font-size="10.5" fill="#334155">共享申请/批准/解除全程留痕,管理员可查看全部共享关系</text>
+    </svg>
+    <div class="fig-cap"><b>图 3-1</b> 数据归属与共享模型:默认隔离,共享经申请-审批生效,管理员天然全局可见</div>
+  </div>
+
+  <h4>共享流程细节</h4>
+  <ol>
+    <li><b>发起申请</b>:用户 A 在"共享管理"中选择目标用户 B,勾选共享范围(全部 / 上游 / 下游 / 中间层,可多选),提交;</li>
+    <li><b>通知与审批</b>:B 收到站内通知(WebSocket 实时推送),批准或拒绝,可附理由;</li>
+    <li><b>生效</b>:共享范围内,A、B 互相可见并共同维护;每条记录显示"最后维护人 + 维护时间";</li>
+    <li><b>解除</b>:任一方发起解除,另一方确认后生效;解除后各自保留自己创建的数据,历史审计不删除;</li>
+    <li><b>留痕</b>:申请、批准、拒绝、解除全部写入审计日志;管理员可见全部共享关系并可仲裁。</li>
+  </ol>
+
+  <h3>3.3 并发兜底机制(多人共改不丢数据)</h3>
+  <div class="fig">
+    <svg viewBox="0 0 940 320" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <g stroke-dasharray="5 4" stroke="#CBD5E1" stroke-width="1.3">
+        <line x1="170" y1="40" x2="170" y2="290"/><line x1="470" y1="40" x2="470" y2="290"/><line x1="780" y1="40" x2="780" y2="290"/>
+      </g>
+      <rect x="115" y="30" width="110" height="30" rx="7" fill="#0F172A"/>
+      <text x="170" y="50" text-anchor="middle" font-size="11.5" fill="#fff">用户 A</text>
+      <rect x="415" y="30" width="110" height="30" rx="7" fill="#0F172A"/>
+      <text x="470" y="50" text-anchor="middle" font-size="11.5" fill="#fff">用户 B</text>
+      <rect x="725" y="30" width="110" height="30" rx="7" fill="#0F172A"/>
+      <text x="780" y="50" text-anchor="middle" font-size="11.5" fill="#fff">服务器</text>
+
+      <g stroke="#2563EB" stroke-width="1.4" fill="none" marker-end="url(#ar)">
+        <path d="M170 80 L780 80"/><path d="M470 100 L780 100"/>
+        <path d="M170 140 L780 140"/>
+        <path d="M470 180 L780 180"/>
+        <path d="M470 240 L780 240"/>
+      </g>
+      <g font-size="10" fill="#334155">
+        <text x="180" y="73">1. 读取记录(版本 v5)</text>
+        <text x="480" y="93">2. 同时读取(版本 v5)</text>
+        <text x="182" y="133">3. A 保存 → 基线 v5 校验通过 → 写入 v6</text>
+        <text x="482" y="173">4. B 保存 → 基线 v5 ≠ 当前 v6 → <tspan fill="#DC2626" font-weight="bold">版本冲突,拒绝覆盖</tspan></text>
+        <text x="482" y="233">5. 系统展示差异(哪些字段被 A 改过)→ B 合并后重新保存 → v7</text>
+      </g>
+      <rect x="600" y="160" width="310" height="52" rx="8" fill="#FEF2F2" stroke="#EF4444"/>
+      <text x="755" y="181" text-anchor="middle" font-size="10.5" fill="#B91C1C" font-weight="bold">冲突不丢数据:B 的改动自动存为「冲突草稿副本」</text>
+      <text x="755" y="199" text-anchor="middle" font-size="10" fill="#7F1D1D">可随时在草稿箱找回并合并,绝不静默丢弃</text>
+      <rect x="40" y="262" width="860" height="40" rx="8" fill="#F0F9FF" stroke="#06B6D4"/>
+      <text x="470" y="280" text-anchor="middle" font-size="10.5" fill="#0E7490" font-weight="bold">每次写入(无论成功/冲突)均记审计日志:操作人 · 时间 · IP · 实体 · 改前值 · 改后值</text>
+      <text x="470" y="295" text-anchor="middle" font-size="10" fill="#64748B">编辑页另设 30 秒自动草稿保存 + 打开编辑时显示「X 正在编辑该记录」(5 分钟无心跳自动释放)</text>
+    </svg>
+    <div class="fig-cap"><b>图 3-2</b> 并发兜底时序:版本号乐观锁保证"后保存的人不会覆盖先保存的人"</div>
+  </div>
+
+  <table>
+    <tr><th style="width:170px">机制</th><th>说明</th></tr>
+    <tr><td>版本号乐观锁</td><td>每条主体记录带 version 字段;保存时按"读到的版本"校验,不一致则拒绝并弹出差异对比(哪些字段被谁修改),合并后重新保存。</td></tr>
+    <tr><td>编辑心跳</td><td>进入编辑页即上报"编辑中";他人打开同一条记录时看到黄色提示"XXX 正在编辑,建议稍后再改";5 分钟无心跳自动释放,支持手动抢占(抢占留痕)。</td></tr>
+    <tr><td>事务保护</td><td>所有写操作在数据库事务内;配额扣减、订单状态流转等关键操作加行级锁,杜绝超额分配。</td></tr>
+    <tr><td>冲突草稿</td><td>版本冲突时,提交内容自动保存为"冲突草稿副本",可在草稿箱找回合并,数据零丢失。</td></tr>
+    <tr><td>全量审计</td><td>每一次写操作(成功与失败)均记录:操作人、时间、IP、实体类型、实体 ID、改前值(JSON)、改后值(JSON)。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 04 主体管理 ============ -->
+<section id="s4">
+  <div class="sec-head"><div class="sec-num">04</div><h2 class="sec-title">供应链主体管理设计</h2></div>
+  <div class="sec-desc">上游 / 中间层 / 下游三层主体的字段体系、链路归属规则与配额管理。</div>
+
+  <h3>4.1 产品线设计(可扩展性基石)</h3>
+  <p>产品型号作为独立维度:<b>产品线表</b>维护型号(如 B300)、类别(服务器整机 / 硬件板卡 / 其他)、状态。供货方配额、客户意向、看板发布、匹配、订单全部挂接产品线。<b>未来新增板卡或其他服务器型号,只需在产品线表中添加一行,全系统自动支持,无需改代码。</b></p>
+
+  <h3>4.2 供应链三层结构</h3>
+  <div class="fig">
+    <svg viewBox="0 0 940 430" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="30" width="290" height="380" rx="12" fill="#EFF6FF"/>
+      <text x="165" y="58" text-anchor="middle" font-size="13.5" fill="#1D4ED8" font-weight="bold">上游供货层</text>
+      <rect x="55" y="75" width="220" height="44" rx="8" fill="#0F172A"/>
+      <text x="165" y="101" text-anchor="middle" font-size="11.5" fill="#fff" font-weight="bold">海外链路方 A(货源总源)</text>
+      <rect x="45" y="140" width="115" height="52" rx="8" fill="#fff" stroke="#2563EB"/>
+      <text x="102" y="162" text-anchor="middle" font-size="10.5" fill="#1E293B" font-weight="bold">国内供货方 A-1</text>
+      <text x="102" y="180" text-anchor="middle" font-size="9" fill="#64748B">代表链路 A</text>
+      <rect x="170" y="140" width="115" height="52" rx="8" fill="#fff" stroke="#2563EB"/>
+      <text x="227" y="162" text-anchor="middle" font-size="10.5" fill="#1E293B" font-weight="bold">国内供货方 A-2</text>
+      <text x="227" y="180" text-anchor="middle" font-size="9" fill="#64748B">代表链路 A</text>
+      <rect x="55" y="220" width="220" height="44" rx="8" fill="#0F172A"/>
+      <text x="165" y="246" text-anchor="middle" font-size="11.5" fill="#fff" font-weight="bold">海外链路方 B(货源总源)</text>
+      <rect x="70" y="285" width="180" height="52" rx="8" fill="#fff" stroke="#2563EB"/>
+      <text x="160" y="307" text-anchor="middle" font-size="10.5" fill="#1E293B" font-weight="bold">国内供货方 B-1</text>
+      <text x="160" y="325" text-anchor="middle" font-size="9" fill="#64748B">代表链路 B</text>
+      <text x="165" y="365" text-anchor="middle" font-size="10" fill="#1D4ED8">同一链路方 → 多个国内代表,必须标注所属链路</text>
+
+      <rect x="330" y="30" width="290" height="380" rx="12" fill="#F0FDFA"/>
+      <text x="475" y="58" text-anchor="middle" font-size="13.5" fill="#0F766E" font-weight="bold">中间服务层(1-2 层 · 国资居多)</text>
+      <rect x="365" y="75" width="220" height="46" rx="8" fill="#fff" stroke="#0D9488"/>
+      <text x="475" y="95" text-anchor="middle" font-size="11" fill="#115E59" font-weight="bold">代开信用证主体</text>
+      <text x="475" y="112" text-anchor="middle" font-size="9" fill="#64748B">跨境证 / 国内证</text>
+      <rect x="365" y="140" width="220" height="46" rx="8" fill="#fff" stroke="#0D9488"/>
+      <text x="475" y="160" text-anchor="middle" font-size="11" fill="#115E59" font-weight="bold">开保函主体</text>
+      <text x="475" y="177" text-anchor="middle" font-size="9" fill="#64748B">企业 / 银行 / 保险公司开具</text>
+      <rect x="365" y="205" width="220" height="46" rx="8" fill="#fff" stroke="#0D9488"/>
+      <text x="475" y="225" text-anchor="middle" font-size="11" fill="#115E59" font-weight="bold">居间分账主体</text>
+      <text x="475" y="242" text-anchor="middle" font-size="9" fill="#64748B">贸易夹层 · 通道费</text>
+      <rect x="365" y="270" width="220" height="46" rx="8" fill="#fff" stroke="#0D9488"/>
+      <text x="475" y="290" text-anchor="middle" font-size="11" fill="#115E59" font-weight="bold">意向金截流主体</text>
+      <text x="475" y="307" text-anchor="middle" font-size="9" fill="#64748B">资金监管 / 截留</text>
+      <text x="475" y="345" text-anchor="middle" font-size="10" fill="#0F766E">目的可多选 · 每层独立建档 · 沟通日志留痕</text>
+      <text x="475" y="365" text-anchor="middle" font-size="10" fill="#0F766E">(因交易模式不同,中间层可能临时出现/变化)</text>
+
+      <rect x="640" y="30" width="280" height="380" rx="12" fill="#ECFDF5"/>
+      <text x="780" y="58" text-anchor="middle" font-size="13.5" fill="#047857" font-weight="bold">下游客户层</text>
+      <rect x="675" y="75" width="210" height="50" rx="8" fill="#fff" stroke="#10B981"/>
+      <text x="780" y="96" text-anchor="middle" font-size="11" fill="#065F46" font-weight="bold">客户 1 · 已验资</text>
+      <text x="780" y="114" text-anchor="middle" font-size="9" fill="#64748B">采购主体 · 意向:信用证</text>
+      <rect x="675" y="145" width="210" height="50" rx="8" fill="#fff" stroke="#10B981"/>
+      <text x="780" y="166" text-anchor="middle" font-size="11" fill="#065F46" font-weight="bold">客户 2 · 验资中</text>
+      <text x="780" y="184" text-anchor="middle" font-size="9" fill="#64748B">采购主体 · 意向:预付款</text>
+      <rect x="675" y="215" width="210" height="50" rx="8" fill="#fff" stroke="#10B981"/>
+      <text x="780" y="236" text-anchor="middle" font-size="11" fill="#065F46" font-weight="bold">客户 3 · 待验资</text>
+      <text x="780" y="254" text-anchor="middle" font-size="9" fill="#64748B">采购主体 · 意向:待定</text>
+      <text x="780" y="300" text-anchor="middle" font-size="10" fill="#047857">画像:类型 / 用途 / 决策链</text>
+      <text x="780" y="320" text-anchor="middle" font-size="10" fill="#047857">沟通记录全程留痕</text>
+
+      <!-- 货物流 -->
+      <g stroke="#2563EB" stroke-width="1.8" fill="none" marker-end="url(#ar)">
+        <path d="M275 97 L365 97"/><path d="M620 97 L675 97"/>
+        <path d="M275 242 L365 242"/><path d="M620 285 L675 285"/>
+      </g>
+      <!-- 资金流 -->
+      <g stroke="#10B981" stroke-width="1.8" fill="none" stroke-dasharray="6 4" marker-end="url(#ar2)">
+        <path d="M675 110 L620 110"/><path d="M365 110 L275 110"/>
+        <path d="M675 300 L620 300"/>
+      </g>
+      <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#10B981"/></marker></defs>
+      <text x="300" y="92" font-size="10" fill="#1D4ED8" font-weight="bold">货源</text>
+      <text x="640" y="92" font-size="10" fill="#1D4ED8" font-weight="bold">交付</text>
+      <text x="350" y="105" font-size="10" fill="#047857" font-weight="bold">货款</text>
+      <text x="640" y="297" font-size="10" fill="#047857" font-weight="bold">资金</text>
+    </svg>
+    <div class="fig-cap"><b>图 4-1</b> 三层结构:实线=货物流,虚线=资金流;中间层按交易模式动态存在</div>
+  </div>
+
+  <h3>4.3 上游供货方</h3>
+  <div class="callout"><b>链路归属规则(核心):</b>每个供货方必须标注<b>所属海外链路方</b>(必填);同一海外链路方下可有多个国内供货方作为代表销售。链路方作为独立档案维护(名称、区域、联系人、背景备注),供货方列表支持按链路方聚合查看。</div>
+
+  <h4>字段设计(分类录入,便于统计分析)</h4>
+  <table>
+    <tr><th style="width:110px">分组</th><th style="width:210px">字段</th><th style="width:90px">必填</th><th>说明</th></tr>
+    <tr><td rowspan="5"><b>基础信息</b></td><td>供货方名称 / 简称</td><td>✓</td><td>公司全称 + 常用简称</td></tr>
+    <tr><td>注册地(境内/境外) · 统一社会信用代码(或境外注册号)</td><td>✓</td><td>境外主体填注册号</td></tr>
+    <tr><td>成立时间 · 注册资本 · 股权结构</td><td></td><td>股权结构为文本描述,用于背景判断</td></tr>
+    <tr><td>联系人 / 职务 / 电话·微信 / 邮箱</td><td>✓</td><td>可维护多个联系人</td></tr>
+    <tr><td>备注</td><td></td><td>自由文本</td></tr>
+    <tr><td rowspan="2"><b>链路归属</b></td><td>所属海外链路方</td><td>✓</td><td>下拉选择链路方档案,未建可快捷新建</td></tr>
+    <tr><td>链路角色(一手 / 二手 / 居间代表 / 其他) · 链路上级</td><td></td><td>一手=直接对接海外链路方;链路上级用于描述多层嵌套</td></tr>
+    <tr><td rowspan="4"><b>交易属性</b></td><td>采购方式(预付款 / 信用证-国内 / 信用证-跨境)</td><td>✓</td><td>多选,支持混合</td></tr>
+    <tr><td>期货 / 现货 / 准现货</td><td>✓</td><td>准现货=已有货源、预计短期内可交付</td></tr>
+    <tr><td>报价(单价/整机价)· 币种 · 报价有效期</td><td>✓</td><td>支持历史报价留档(每次更新旧价入历史)</td></tr>
+    <tr><td>起订量(MOQ)· 交货周期 · 付款节点(定金比例/尾款节点)· 发票类型</td><td></td><td>付款节点支持自定义描述</td></tr>
+    <tr><td rowspan="3"><b>反向保障</b></td><td>保障措施(保函 / 先开后开 / 无 / 其他)</td><td></td><td>先开后开=先开证后开货等节奏约定</td></tr>
+    <tr><td>保函比例 · 保函开具方(企业 / 银行 / 保险公司)· 开证主体名称</td><td></td><td>开具方与比例联动录入</td></tr>
+    <tr><td>保障有效期 · 垫资能力 · 兜底条款备注</td><td></td><td>垫资能力用于评估大额交易</td></tr>
+    <tr><td rowspan="2"><b>配额管理</b></td><td colspan="3">独立子表「批次配额」:产品型号 · 批次号 · 配额数量 · 产生时间 · 结束时间 · 状态(可用/锁定/用完/过期) · 来源备注。<b>状态由定时任务自动流转</b>,到期前 7 天站内提醒;成交后自动扣减并写审计。</td></tr>
+    <tr><td colspan="3">同一供货方可有多批次配额并存;支持批量导入(Excel 模板)。</td></tr>
+    <tr><td rowspan="2"><b>合作评价</b>(内部)</td><td>合作状态(意向 / 洽谈中 / 合作中 / 暂停 / 终止)</td><td>✓</td><td>状态变更记日志</td></tr>
+    <tr><td>历史成交次数 · 累计成交金额 · 履约率 · 违约次数 · 内部信用评级 · 风险备注</td><td></td><td>成交后自动回填统计;评级人工维护</td></tr>
+    <tr><td><b>附件资料</b></td><td>资质文件 · 协议模板 · 保函样本 · 报价单</td><td></td><td>服务器本地存储,按权限访问,下载留痕</td></tr>
+  </table>
+
+  <h3>4.4 中间层</h3>
+  <table>
+    <tr><th style="width:110px">分组</th><th style="width:240px">字段</th><th style="width:90px">必填</th><th>说明</th></tr>
+    <tr><td rowspan="3"><b>基础信息</b></td><td>主体名称 · 统一社会信用代码 · 注册地 · 注册资本</td><td>✓</td><td>国资主体居多,可标注"国资"标签</td></tr>
+    <tr><td>企业性质(国资 / 民营 / 混合 / 其他)· 所属层级(第 1 层 / 第 2 层)</td><td>✓</td><td>层级描述离交易核心的远近</td></tr>
+    <tr><td>联系人 / 职务 / 联系方式</td><td>✓</td><td></td></tr>
+    <tr><td rowspan="2"><b>功能定位</b></td><td>中间层目的(代开信用证 / 开保函 / 居间分账 / 意向金截流 / 其他)</td><td>✓</td><td>多选;因交易模式不同会动态出现</td></tr>
+    <tr><td>费率 / 分成比例 · 结算方式 · 账期</td><td></td><td>用于成本测算</td></tr>
+    <tr><td><b>合作状态</b></td><td>合作状态 · 历史合作记录 · 信用评级 · 风险备注</td><td></td><td>与上游共用状态字典</td></tr>
+    <tr><td><b>沟通记录</b></td><td colspan="3">见 4.6 通用沟通记录设计(中间层会变化,沟通留痕尤为重要)</td></tr>
+  </table>
+
+  <h3>4.5 下游客户(采购方)</h3>
+  <table>
+    <tr><th style="width:110px">分组</th><th style="width:240px">字段</th><th style="width:90px">必填</th><th>说明</th></tr>
+    <tr><td rowspan="3"><b>基础信息</b></td><td>采购主体名称 · 统一社会信用代码 · 注册地 · 成立时间 · 注册资本 · 行业</td><td>✓</td><td></td></tr>
+    <tr><td>联系人 / 职务 / 电话·微信 / 邮箱</td><td>✓</td><td>可维护多个联系人</td></tr>
+    <tr><td>备注</td><td></td><td></td></tr>
+    <tr><td rowspan="2"><b>证照与账户</b></td><td>营业执照(附件)· 开户许可证(附件)</td><td></td><td>签约前补齐</td></tr>
+    <tr><td>对公账户信息(户名/开户行/账号)· 开票信息</td><td></td><td><b>可后期签约时维护</b>;字段级权限控制,仅共享范围内可见</td></tr>
+    <tr><td rowspan="2"><b>交易意向</b></td><td>意向采购方式(预付款 / 信用证-国内 / 信用证-跨境)</td><td>✓</td><td>多选,用于匹配</td></tr>
+    <tr><td>意向产品型号 · 意向数量 · 预算区间 · 预期成交时间 · 现货/期货偏好</td><td></td><td>用于匹配评分</td></tr>
+    <tr><td rowspan="2"><b>验资信息</b></td><td>是否完成验资 · 验资形式(视频验资 / 账户余额照片 / 银行资信证明 / 上级控股方担保证明,可多选组合)</td><td></td><td>每种材料独立建档;未验资客户在匹配结果中标记提醒</td></tr>
+    <tr><td>验资时间 · 材料有效期(自动计算)· 验资金额 · AI 初审状态 · 人工终审状态 · 下次复核时间</td><td></td><td>材料要求与有效期见 4.7;AI 初审见 6.4</td></tr>
+    <tr><td rowspan="2"><b>客户画像</b></td><td>客户类型(终端使用方 / 贸易商 / 国资平台 / 民营)· 采购用途(自用 / 转售)</td><td></td><td>影响撮合策略</td></tr>
+    <tr><td>决策链(关键决策人及角色)· 历史采购记录 · 付款习惯(及时性)· 风险偏好 · 客户价值分级(A/B/C)</td><td></td><td>画像越完整,匹配越精准;建议持续补充</td></tr>
+    <tr><td><b>沟通记录</b></td><td colspan="3">见 4.6 通用沟通记录设计(保留完整日志过程)</td></tr>
+  </table>
+
+  <div class="callout"><b>画像建议(补充):</b>除上述字段外,建议在实际使用中持续沉淀:①客户对价格波动的敏感度;②以往交易中的开证/付款效率;③客户与中间层的既有关系(是否绑定某代开证方);④季节性/周期性采购规律。这些以"画像标签"形式维护,匹配时可作为软性加分项。</div>
+
+  <h3>4.6 通用沟通记录设计</h3>
+  <table>
+    <tr><th style="width:170px">字段</th><th>说明</th></tr>
+    <tr><td>记录时间 / 沟通方式(电话 / 微信 / 面谈 / 会议 / 其他)</td><td>系统默认当前时间,可补录历史沟通</td></tr>
+    <tr><td>参与人(内部) / 对方参与人</td><td>多选内部成员</td></tr>
+    <tr><td>沟通内容</td><td>正文;支持分段要点</td></tr>
+    <tr><td>下一步计划 / 跟进时间</td><td>跟进到期可提醒</td></tr>
+    <tr><td>附件</td><td>截图、文件,可选</td></tr>
+  </table>
+  <p><b>规则:沟通记录"只增不改"</b>(append-only),不允许修改或删除,只能在原记录下追加说明——这本身就是审计的一部分。主体详情页以时间线形式展示全部沟通历史。</p>
+
+  <h3>4.7 验资材料与有效期管理</h3>
+  <table>
+    <tr><th style="width:140px">验资方式</th><th>材料要求</th><th>有效期</th><th style="width:120px">支持格式</th></tr>
+    <tr><td><b>视频验资</b></td><td>3 日内录制的视频,画面需展示账户余额与当前日期</td><td>自拍摄日起 3 日</td><td>mp4 等视频(单文件 ≤200MB)</td></tr>
+    <tr><td><b>账户余额照片</b></td><td>照片需体现日期(手机银行界面截图、带日期水印照片等)</td><td>自照片日期起 3 日</td><td>jpg / png 等图片</td></tr>
+    <tr><td><b>银行资信证明</b></td><td>银行开具的资信证明</td><td>自开具日起 1 个月</td><td>PDF / 图片扫描件</td></tr>
+    <tr><td><b>上级控股方担保证明</b></td><td>上级控股方出具的担保函</td><td>按担保函载明期限</td><td>PDF / 图片扫描件</td></tr>
+  </table>
+  <ul>
+    <li>四种方式可单选或多选组合,<b>每种材料独立建档</b>(材料文件、上传时间、材料日期、有效期、到期状态);</li>
+    <li>有效期由系统自动计算,到期前 7 天提醒重新验资;</li>
+    <li><b>材料高度敏感</b>:仅数据主人、共享范围内用户与管理员可见;下载全程留痕;</li>
+    <li>上传后自动进入「AI 初审」流程(Gemini 识别提取与有效性校验,详见 6.4),初审通过仍需<b>人工终审</b>确认,全过程留痕。</li>
+  </ul>
+</section>
+
+<!-- ============ 05 核心功能 ============ -->
+<section id="s5">
+  <div class="sec-head"><div class="sec-num">05</div><h2 class="sec-title">核心功能设计</h2></div>
+  <div class="sec-desc">看板发布、自动匹配、优先级、分析中台、订单跟踪五大模块。</div>
+
+  <h3>5.1 供需看板发布</h3>
+  <table>
+    <tr><th style="width:170px">字段</th><th>说明</th></tr>
+    <tr><td>发布类型</td><td>采购需求 / 供货信息</td></tr>
+    <tr><td>产品型号 · 标题 · 数量 · 价格区间 · 币种</td><td>标题自由填写,型号必选(挂接产品线)</td></tr>
+    <tr><td>有效期 · 状态(发布中 / 已关闭 / 已成交)</td><td>到期自动关闭;成交后可手动关闭并关联订单</td></tr>
+    <tr><td>可见范围(全员可见 / 仅自己可见)</td><td><b>默认全员可见</b>,可自行设为私密;发布后仍可调整</td></tr>
+    <tr><td>发布人 · 发布时间 · 联系方式</td><td>自动带入当前用户</td></tr>
+  </table>
+  <p>发布即触发一次即时匹配(见 5.2);全员看板按时间倒序展示,支持按类型/型号/价格区间筛选。</p>
+
+  <h3>5.2 自动匹配引擎(上游 ↔ 下游,不含中间层)</h3>
+  <div class="fig">
+    <svg viewBox="0 0 940 540" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <rect x="300" y="20" width="340" height="46" rx="9" fill="#0F172A"/>
+      <text x="470" y="40" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">触发:发布看板 / 新增·更新主体 / 每日定时跑批</text>
+      <text x="470" y="56" text-anchor="middle" font-size="10" fill="#93A6C8">三种触发方式,结果增量更新并推送通知</text>
+
+      <g stroke="#94A3B8" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+        <path d="M470 66 L470 92"/>
+        <path d="M470 208 L470 234"/>
+        <path d="M470 350 L470 376"/>
+        <path d="M470 496 L470 512"/>
+      </g>
+
+      <rect x="240" y="92" width="460" height="116" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="470" y="114" text-anchor="middle" font-size="12" fill="#1D4ED8" font-weight="bold">① 基础过滤(硬性条件,一票否决)</text>
+      <g font-size="10.5" fill="#334155">
+        <text x="265" y="136">· 产品型号一致(如 B300)</text>
+        <text x="265" y="155">· 配额在有效期内,且可用数量 ≥ 客户需求数量</text>
+        <text x="265" y="174">· 采购方式兼容(供货方要求 ⊆ 客户意向:预付 / 国内证 / 跨境证)</text>
+        <text x="265" y="193">· 供货方合作状态为"合作中/洽谈中",且未被拉黑</text>
+      </g>
+
+      <rect x="240" y="234" width="460" height="116" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="470" y="256" text-anchor="middle" font-size="12" fill="#1D4ED8" font-weight="bold">② 评分排序(软性维度,加权计分 0-100)</text>
+      <g font-size="10.5" fill="#334155">
+        <text x="265" y="278">· 用户自设优先级(权重最高 30%)</text>
+        <text x="265" y="297">· 最近维护/更新时间(默认按此,20%)</text>
+        <text x="265" y="316">· 价格吻合度 + 现货/期货偏好 + 起订量满足度(25%)</text>
+        <text x="265" y="335">· 历史履约率 / 客户验资状态与画像匹配度(25%)</text>
+      </g>
+
+      <rect x="240" y="376" width="460" height="120" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="470" y="398" text-anchor="middle" font-size="12" fill="#1D4ED8" font-weight="bold">③ 可见性裁剪(数据归属规则)</text>
+      <g font-size="10.5" fill="#334155">
+        <text x="265" y="420">· 自己维护的数据 → 全量信息展示</text>
+        <text x="265" y="439">· 他人维护的数据 → 仅简要信息(名称/型号/数量/价格区间/更新时间)</text>
+        <text x="265" y="458">· 同时标注「维护人:XXX」,可一键发起"查看详情申请"</text>
+        <text x="265" y="477">· 数据维护人批准后,该条匹配结果解锁全量信息(申请与批准均留痕)</text>
+      </g>
+
+      <rect x="300" y="512" width="340" height="26" rx="7" fill="#EFF6FF" stroke="#2563EB"/>
+      <text x="470" y="530" text-anchor="middle" font-size="10.5" fill="#1D4ED8" font-weight="bold">输出:匹配结果列表(按匹配度降序,支持收藏/忽略/发起衔接)</text>
+    </svg>
+    <div class="fig-cap"><b>图 5-1</b> 匹配引擎流程:硬过滤 → 软评分 → 归属裁剪,只匹配上游与下游,不涉及中间层;规则之上叠加 AI 语义层(见第 06 节)</div>
+  </div>
+  <div class="callout"><b>AI 增强:</b>规则引擎之上叠加需求语义解析、语义兼容评分、相似主体推荐、匹配理由生成与反馈学习五层 AI 能力,详见 6.2。</div>
+
+  <h3>5.3 优先级管理</h3>
+  <ul>
+    <li>用户可对<b>上游供货方、下游客户</b>自行设置优先级(1-9 级或星标),仅对自己生效;</li>
+    <li><b>未设置优先级时,默认按最近维护更新时间排序</b>(越新越靠前);</li>
+    <li>优先级在匹配评分中权重最高(30%),直接决定匹配结果排序;</li>
+    <li>优先级在主体详情页和列表页均可快捷调整(拖拽或星标)。</li>
+  </ul>
+
+  <h3>5.4 中台分析看板</h3>
+  <table>
+    <tr><th style="width:180px">模块</th><th>指标与呈现</th></tr>
+    <tr><td><b>KPI 总览</b></td><td>上游供货方总数 / 活跃海外链路方数 / 中间层数 / 下游客户数 / 客户验资完成率 / 在途订单数 / 本月成交额 —— 卡片式,环比涨跌</td></tr>
+    <tr><td><b>变化趋势</b></td><td>近 12 个月:新增主体数(上游/下游分别)、更新维护频次、看板发布量 —— 折线/柱状图</td></tr>
+    <tr><td><b>配额与到期预警</b></td><td>各产品线可用配额总量、7 天内到期批次列表、已过期批次 —— 表格 + 警示色</td></tr>
+    <tr><td><b>成交分析</b></td><td>成交金额/数量:按产品线、按海外链路方、按客户、按中间层目的(代开证/保函/居间)多维下钻 —— 柱状/环形图</td></tr>
+    <tr><td><b>链路分布</b></td><td>各海外链路方下国内供货方数量、配额占比 —— 环形图</td></tr>
+    <tr><td><b>主体动态</b></td><td>本周新增/更新/失效主体流水(谁在什么时间改了什么)—— 列表,可直接跳转</td></tr>
+  </table>
+  <p>支持按时间范围、产品线、维护人筛选;数据随业务实时更新(看板层做轻量缓存,定时刷新)。</p>
+
+  <h3>5.5 订单跟踪</h3>
+  <div class="fig">
+    <svg viewBox="0 0 940 400" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <g font-size="10" fill="#334155">
+        <text x="20" y="28">主流程:协议签订后录入订单,逐环节推进</text>
+      </g>
+      <!-- 主流程状态 -->
+      <g font-size="10.5">
+        <rect x="20" y="45" width="100" height="54" rx="8" fill="#0F172A"/><text x="70" y="68" text-anchor="middle" fill="#fff" font-weight="bold">已录入</text><text x="70" y="86" text-anchor="middle" fill="#93A6C8">协议信息建档</text>
+        <rect x="138" y="45" width="100" height="54" rx="8" fill="#fff" stroke="#2563EB"/><text x="188" y="68" text-anchor="middle" fill="#1D4ED8" font-weight="bold">货源确认中</text><text x="188" y="86" text-anchor="middle" fill="#64748B">配额锁定</text>
+        <rect x="256" y="45" width="100" height="54" rx="8" fill="#fff" stroke="#2563EB"/><text x="306" y="68" text-anchor="middle" fill="#1D4ED8" font-weight="bold">货源已确认</text><text x="306" y="86" text-anchor="middle" fill="#64748B">批次绑定</text>
+        <rect x="374" y="45" width="100" height="54" rx="8" fill="#fff" stroke="#2563EB"/><text x="424" y="68" text-anchor="middle" fill="#1D4ED8" font-weight="bold">付款中</text><text x="424" y="86" text-anchor="middle" fill="#64748B">定金/开证</text>
+        <rect x="492" y="45" width="100" height="54" rx="8" fill="#fff" stroke="#2563EB"/><text x="542" y="68" text-anchor="middle" fill="#1D4ED8" font-weight="bold">已付款</text><text x="542" y="86" text-anchor="middle" fill="#64748B">资金到位</text>
+        <rect x="610" y="45" width="100" height="54" rx="8" fill="#fff" stroke="#2563EB"/><text x="660" y="68" text-anchor="middle" fill="#1D4ED8" font-weight="bold">到货</text><text x="660" y="86" text-anchor="middle" fill="#64748B">入库/验收</text>
+        <rect x="728" y="45" width="100" height="54" rx="8" fill="#fff" stroke="#2563EB"/><text x="778" y="68" text-anchor="middle" fill="#1D4ED8" font-weight="bold">已交付</text><text x="778" y="86" text-anchor="middle" fill="#64748B">客户签收</text>
+        <rect x="846" y="45" width="80" height="54" rx="8" fill="#ECFDF5" stroke="#10B981"/><text x="886" y="68" text-anchor="middle" fill="#047857" font-weight="bold">已完成</text><text x="886" y="86" text-anchor="middle" fill="#64748B">订单关闭</text>
+      </g>
+      <g stroke="#94A3B8" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+        <path d="M120 72 L138 72"/><path d="M238 72 L256 72"/><path d="M356 72 L374 72"/>
+        <path d="M474 72 L492 72"/><path d="M592 72 L610 72"/><path d="M710 72 L728 72"/><path d="M828 72 L846 72"/>
+      </g>
+      <!-- 违约分支 -->
+      <g stroke="#EF4444" stroke-width="1.5" fill="none">
+        <path d="M470 99 L470 150" marker-end="url(#ar3)"/>
+      </g>
+      <defs><marker id="ar3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#EF4444"/></marker></defs>
+      <g font-size="10.5">
+        <rect x="350" y="150" width="120" height="46" rx="8" fill="#FEF2F2" stroke="#EF4444"/><text x="410" y="170" text-anchor="middle" fill="#B91C1C" font-weight="bold">违约</text><text x="410" y="187" text-anchor="middle" fill="#7F1D1D">任一环节可进入</text>
+        <rect x="510" y="150" width="120" height="46" rx="8" fill="#FEF2F2" stroke="#EF4444"/><text x="570" y="170" text-anchor="middle" fill="#B91C1C" font-weight="bold">违约处理中</text><text x="570" y="187" text-anchor="middle" fill="#7F1D1D">方案跟踪</text>
+        <rect x="670" y="140" width="120" height="46" rx="8" fill="#FFFBEB" stroke="#F59E0B"/><text x="730" y="160" text-anchor="middle" fill="#B45309" font-weight="bold">已解决</text><text x="730" y="177" text-anchor="middle" fill="#92400E">回到原环节</text>
+        <rect x="670" y="205" width="120" height="46" rx="8" fill="#F1F5F9" stroke="#94A3B8"/><text x="730" y="225" text-anchor="middle" fill="#475569" font-weight="bold">已关闭</text><text x="730" y="242" text-anchor="middle" fill="#64748B">订单终止</text>
+      </g>
+      <g stroke="#F59E0B" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar4)">
+        <path d="M630 170 L670 162"/>
+      </g>
+      <defs><marker id="ar4" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#F59E0B"/></marker></defs>
+      <g stroke="#94A3B8" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+        <path d="M630 190 L670 228"/>
+      </g>
+      <text x="20" y="135" font-size="10.5" fill="#334155">跟踪要素(每环节均可记事件):</text>
+      <g font-size="10" fill="#475569">
+        <text x="20" y="155">· 货源情况:配额锁定/释放、批次对应、上游交付承诺</text>
+        <text x="20" y="173">· 资金支付:定金、尾款、信用证开立/兑付进度(金额+时间)</text>
+        <text x="20" y="191">· 到货情况:物流、报关、入库验收</text>
+        <text x="20" y="209">· 交付情况:客户签收、验收单、发票</text>
+        <text x="20" y="227">· 违约事项:违约方、事项内容、处理方案、履约状态(独立跟踪表)</text>
+      </g>
+      <text x="20" y="262" font-size="10.5" fill="#334155">订单字段:订单编号 · 产品型号 · 数量 · 单价 · 总金额 · 币种 · 上游供货方 · 下游客户 · 中间层(可多个)· 采购方式 · 协议编号 · 协议附件 · 状态 · 签订时间</text>
+      <text x="20" y="282" font-size="10.5" fill="#64748B">订单详情 = 状态步骤条 + 事件时间线(分类色标:货源蓝/资金绿/到货青/交付紫/违约红)+ 附件,全部事件只增不改,留痕可追溯</text>
+    </svg>
+    <div class="fig-cap"><b>图 5-2</b> 订单状态机:主流程八节点推进,任一环节可进入违约分支,违约解决后回到原环节或关闭</div>
+  </div>
+  <div class="callout"><b>AI 增强:</b>沟通记录一键提取跟踪事件、订单智能摘要、异常自动预警与下一步行动建议,详见 6.3。</div>
+</section>
+
+<!-- ============ 06 AI 全域智能化设计 ============ -->
+<section id="s6">
+  <div class="sec-head"><div class="sec-num">06</div><h2 class="sec-title">AI 全域智能化设计</h2></div>
+  <div class="sec-desc">以智能匹配、智能跟单、智能风控为重点;AI 辅助而非替代,关键环节人工确认。</div>
+
+  <h3>6.1 设计理念与能力全景</h3>
+  <div class="card">
+    <h4>三条铁律</h4>
+    <ul>
+      <li><b>确定性优先</b>:到期、逾期、金额核对等可用规则解决的问题不上 AI;AI 只做规则做不了的事——语义理解、判断与生成;</li>
+      <li><b>人工确认闭环(Human-in-the-loop)</b>:AI 输出一律标注"AI 建议";验资审核、风险判定等关键结论必须人工确认后生效;每条建议保留依据,可点击溯源;</li>
+      <li><b>敏感数据可控</b>:模型供应商经 AI 网关抽象、可切换;报价、账户号等字段送模型前脱敏;所有 AI 调用记日志、可审计。</li>
+    </ul>
+  </div>
+  <div class="fig">
+    <svg viewBox="0 0 940 580" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arAI" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2563EB"/></marker></defs>
+      <rect x="250" y="20" width="440" height="120" rx="12" fill="#EFF6FF" stroke="#2563EB"/>
+      <text x="470" y="46" text-anchor="middle" font-size="13" fill="#1D4ED8" font-weight="bold">智能匹配(重点)</text>
+      <g font-size="10" fill="#1E293B">
+        <rect x="268" y="58" width="126" height="30" rx="6" fill="#fff" stroke="#93C5FD"/><text x="331" y="77" text-anchor="middle">需求语义解析</text>
+        <rect x="407" y="58" width="126" height="30" rx="6" fill="#fff" stroke="#93C5FD"/><text x="470" y="77" text-anchor="middle">语义兼容评分</text>
+        <rect x="546" y="58" width="126" height="30" rx="6" fill="#fff" stroke="#93C5FD"/><text x="609" y="77" text-anchor="middle">相似主体推荐</text>
+        <rect x="268" y="96" width="126" height="30" rx="6" fill="#fff" stroke="#93C5FD"/><text x="331" y="115" text-anchor="middle">匹配理由生成</text>
+        <rect x="407" y="96" width="126" height="30" rx="6" fill="#fff" stroke="#93C5FD"/><text x="470" y="115" text-anchor="middle">反馈学习闭环</text>
+      </g>
+      <rect x="20" y="180" width="230" height="210" rx="12" fill="#FEF2F2" stroke="#EF4444"/>
+      <text x="135" y="206" text-anchor="middle" font-size="13" fill="#B91C1C" font-weight="bold">智能风控(重点)</text>
+      <g font-size="10" fill="#1E293B">
+        <rect x="38" y="218" width="194" height="30" rx="6" fill="#fff" stroke="#FCA5A5"/><text x="135" y="237" text-anchor="middle">验资材料 AI 初审</text>
+        <rect x="38" y="258" width="194" height="30" rx="6" fill="#fff" stroke="#FCA5A5"/><text x="135" y="277" text-anchor="middle">主体风险画像(五维)</text>
+        <rect x="38" y="298" width="194" height="30" rx="6" fill="#fff" stroke="#FCA5A5"/><text x="135" y="317" text-anchor="middle">交易风险提示(三时机)</text>
+        <rect x="38" y="338" width="194" height="30" rx="6" fill="#fff" stroke="#FCA5A5"/><text x="135" y="357" text-anchor="middle">外部监控(二期可选)</text>
+      </g>
+      <rect x="710" y="180" width="230" height="210" rx="12" fill="#ECFDF5" stroke="#10B981"/>
+      <text x="825" y="206" text-anchor="middle" font-size="13" fill="#047857" font-weight="bold">智能跟单(重点)</text>
+      <g font-size="10" fill="#1E293B">
+        <rect x="728" y="218" width="194" height="30" rx="6" fill="#fff" stroke="#6EE7B7"/><text x="825" y="237" text-anchor="middle">沟通 → 跟踪事件提取</text>
+        <rect x="728" y="258" width="194" height="30" rx="6" fill="#fff" stroke="#6EE7B7"/><text x="825" y="277" text-anchor="middle">订单智能摘要</text>
+        <rect x="728" y="298" width="194" height="30" rx="6" fill="#fff" stroke="#6EE7B7"/><text x="825" y="317" text-anchor="middle">异常检测预警</text>
+        <rect x="728" y="338" width="194" height="30" rx="6" fill="#fff" stroke="#6EE7B7"/><text x="825" y="357" text-anchor="middle">下一步行动建议</text>
+      </g>
+      <rect x="250" y="430" width="440" height="120" rx="12" fill="#F5F3FF" stroke="#7C3AED"/>
+      <text x="470" y="456" text-anchor="middle" font-size="13" fill="#6D28D9" font-weight="bold">全域智能助手</text>
+      <g font-size="10" fill="#1E293B">
+        <rect x="268" y="468" width="126" height="30" rx="6" fill="#fff" stroke="#C4B5FD"/><text x="331" y="487" text-anchor="middle">智能录入</text>
+        <rect x="407" y="468" width="126" height="30" rx="6" fill="#fff" stroke="#C4B5FD"/><text x="470" y="487" text-anchor="middle">语义搜索</text>
+        <rect x="546" y="468" width="126" height="30" rx="6" fill="#fff" stroke="#C4B5FD"/><text x="609" y="487" text-anchor="middle">智能周报</text>
+        <rect x="268" y="506" width="126" height="30" rx="6" fill="#fff" stroke="#C4B5FD"/><text x="331" y="525" text-anchor="middle">自然语言查询</text>
+        <rect x="407" y="506" width="126" height="30" rx="6" fill="#fff" stroke="#C4B5FD"/><text x="470" y="525" text-anchor="middle">待办提取</text>
+      </g>
+      <rect x="20" y="430" width="230" height="120" rx="12" fill="#F8FAFC" stroke="#94A3B8"/>
+      <text x="135" y="456" text-anchor="middle" font-size="13" fill="#475569" font-weight="bold">底层模型层(Gemini)</text>
+      <g font-size="10" fill="#334155">
+        <text x="38" y="480">· Gemini 2.5 Flash:主模型</text>
+        <text x="38" y="500">· Gemini 3 Flash:可选升级</text>
+        <text x="38" y="520">· Gemini Embedding:向量检索</text>
+        <text x="38" y="540">· 视频:服务端 ffmpeg 抽帧</text>
+      </g>
+      <rect x="340" y="230" width="260" height="120" rx="12" fill="#0F172A"/>
+      <text x="470" y="258" text-anchor="middle" font-size="13" fill="#fff" font-weight="bold">AI 网关(统一服务层)</text>
+      <text x="470" y="280" text-anchor="middle" font-size="10" fill="#93A6C8">模型路由 · Prompt 模板管理</text>
+      <text x="470" y="298" text-anchor="middle" font-size="10" fill="#93A6C8">敏感字段脱敏 · 超时降级</text>
+      <text x="470" y="316" text-anchor="middle" font-size="10" fill="#93A6C8">调用日志 · 成本控制</text>
+      <text x="470" y="336" text-anchor="middle" font-size="10" fill="#06B6D4">供应商可切换,不绑定</text>
+      <g stroke="#2563EB" stroke-width="1.4" fill="none" marker-end="url(#arAI)">
+        <path d="M470 140 L470 230"/>
+        <path d="M250 280 L340 280"/>
+        <path d="M710 280 L600 280"/>
+        <path d="M470 430 L470 350"/>
+      </g>
+      <g stroke="#94A3B8" stroke-width="1.4" fill="none" stroke-dasharray="5 4" marker-end="url(#arAI)">
+        <path d="M250 490 L340 320"/>
+      </g>
+    </svg>
+    <div class="fig-cap"><b>图 6-1</b> AI 能力全景:四大能力域经统一 AI 网关调用 Gemini 模型,供应商可切换、成本可控</div>
+  </div>
+
+  <h3>6.2 智能匹配(重点)</h3>
+  <p>在 5.2 规则引擎(硬过滤 → 软评分 → 归属裁剪)之上叠加五层 AI 能力:</p>
+  <table>
+    <tr><th style="width:150px">能力</th><th style="width:290px">解决什么问题</th><th>实现方式</th></tr>
+    <tr><td><b>需求语义解析</b></td><td>发布看板用自然语言描述("求 B300 现货 20 台,资金已备好,可预付,最好 9 月中旬前交货,需保函 30%")→ 自动抽取型号/数量/价格/时限/交易方式/保障要求等结构化字段</td><td>LLM 抽取 + 规则校验;发布前人工确认抽取结果,结构化后进入规则匹配</td></tr>
+    <tr><td><b>语义兼容评分</b></td><td>规则匹配不到的软约束:"急需到货"加权现货供货方;"资金紧张"加权信用证方式;客户交付时限与供货方交货周期匹配;历史交易习惯兼容性</td><td>LLM 对供需双方描述做兼容性评估(0-10 分),并入匹配评分(权重 15%)</td></tr>
+    <tr><td><b>相似主体推荐</b></td><td>某供货方被采纳/成交后,推荐属性与画像相似的备选,降低对单一货源的依赖</td><td>Embedding 向量 + 属性相似度,输出 Top 5</td></tr>
+    <tr><td><b>匹配理由生成</b></td><td>每条匹配结果附自然语言解释,用户能看懂"为什么匹配"</td><td>LLM 基于结构化评分依据生成,数据点全部可溯源(例:"链路 A 一手货源、现货 300 台满足 20 台需求、支持预付款与意向一致、历史履约率 100%")</td></tr>
+    <tr><td><b>反馈学习</b></td><td>用户对匹配结果标记"采纳/忽略"后,系统逐步调优评分权重</td><td>简单在线学习(特征加权调优),不引入复杂模型,保证可解释</td></tr>
+  </table>
+
+  <h3>6.3 智能跟单(重点)</h3>
+  <table>
+    <tr><th style="width:150px">能力</th><th>说明</th></tr>
+    <tr><td><b>沟通 → 事件提取</b></td><td>最高频的提效点:业务员把微信/邮件沟通内容粘贴进系统,AI 自动提取关键事件(时间/事项/金额/承诺)→ 生成跟踪事件草稿(分类、标题、内容、关联订单、提醒)→ 人工确认保存,全留痕</td></tr>
+    <tr><td><b>订单智能摘要</b></td><td>订单页顶部一句话摘要:"8/14 签订、配额已锁定、定金 20% 已收、尾款节点 9/5、当前进度正常";点击展开生成依据</td></tr>
+    <tr><td><b>异常检测预警</b></td><td>规则部分:承诺日期已过未更新、付款金额与协议节点不符、交付超期;AI 部分:从事件文本中识别负面信号("资金紧张""上游说可能延迟")→ 自动预警</td></tr>
+    <tr><td><b>下一步行动建议</b></td><td>结合订单状态、协议节点、历史跟进节奏,生成"本周建议:与客户确认尾款资金安排"等行动项,可一键转为待办并定时提醒</td></tr>
+  </table>
+
+  <h3>6.4 智能风险分析(重点)</h3>
+  <h4>① 验资材料 AI 初审</h4>
+  <table>
+    <tr><th style="width:160px">验资方式</th><th style="width:120px">有效期</th><th>AI 初审要点(Gemini 视觉识别)</th></tr>
+    <tr><td><b>视频验资</b>(3 日内录制)</td><td>自拍摄日 3 日</td><td>服务端 ffmpeg 抽关键帧 → 帧图片送 Gemini 识别余额/日期;读取文件拍摄时间元数据,双重校验 ≤3 日</td></tr>
+    <tr><td><b>账户余额照片</b>(需体现日期)</td><td>自照片日期 3 日</td><td>Gemini 识别金额/户名/日期;日期有效性校验;户名与采购主体一致性比对</td></tr>
+    <tr><td><b>银行资信证明</b>(1 个月内)</td><td>自开具日 1 个月</td><td>Gemini PDF 识别开具日期/余额/资信等级;过期自动预警</td></tr>
+    <tr><td><b>上级控股方担保证明</b></td><td>按担保函载明期限</td><td>Gemini 识别担保方/被担保方/担保金额/期限;核对被担保方与采购主体一致</td></tr>
+  </table>
+  <p><b>初审流程</b>:上传(图片/PDF/视频)→ 格式校验 → 视频抽帧 → Gemini 识别提取 → 自动校验(日期有效性、户名一致性、金额提取)→ 生成「AI 初审报告」(提取值 + 有效期判断 + 疑点清单)→ <b>人工终审</b>(通过/驳回,留痕)→ 到期自动提醒重新验资。材料要求与建档规则详见 4.7。</p>
+  <div class="callout"><b>精度兜底(可选):</b>账号、金额、日期等关键数字字段可加「腾讯云 OCR 双通道」——Gemini 提取值与 OCR 提取值比对,不一致自动标疑点,人工终审裁决。验资审核准确性优先,值得双保险。</div>
+
+  <h4>② 主体风险画像(0-100 分 + 风险标签)</h4>
+  <table>
+    <tr><th style="width:140px">维度</th><th style="width:220px">数据来源</th><th>说明</th></tr>
+    <tr><td>验资健康度</td><td>验资材料完整度与时效</td><td>视频/资信证明权重高于余额照片;材料过期自动降分</td></tr>
+    <tr><td>履约记录</td><td>历史订单数据</td><td>履约率、逾期次数、违约记录</td></tr>
+    <tr><td>沟通信号</td><td>沟通记录语义分析</td><td>负面信号频率、承诺兑现率("下周打款"是否兑现)</td></tr>
+    <tr><td>资质背景</td><td>营业执照/工商信息</td><td>成立年限、注册资本;涉诉/经营异常监控为二期可选</td></tr>
+    <tr><td>交易行为</td><td>订单数据</td><td>付款及时性、金额集中度</td></tr>
+  </table>
+  <p>AI 基于五维数据生成风险分与解读文字,评分依据全部可点开溯源;<b>风险结论仅作参考,不自动阻断业务</b>。</p>
+
+  <h4>③ 交易风险提示(三个时机)</h4>
+  <ul>
+    <li><b>匹配时</b>:匹配结果附带风险徽标("该客户未验资""该供货方历史履约率 85%");</li>
+    <li><b>下单前</b>:弹窗汇总交易对手风险画像 + 建议措施("建议要求 30% 保函""建议走代开证主体");</li>
+    <li><b>执行中</b>:进度滞后、付款逾期、负面信号 → 实时风险预警推送。</li>
+  </ul>
+
+  <h3>6.5 全域智能助手</h3>
+  <table>
+    <tr><th style="width:150px">能力</th><th>说明</th></tr>
+    <tr><td>智能录入</td><td>粘贴聊天/名片文本 → 自动填充主体表单;历史报价更新自动识别留档</td></tr>
+    <tr><td>语义搜索</td><td>"找能开跨境证、有现货的链路 A 供货方" → 直接返回结果</td></tr>
+    <tr><td>智能周报</td><td>每周一 09:00 自动生成:本周新增主体、成交进展、到期预警、异常事件、下周建议</td></tr>
+    <tr><td>自然语言查询</td><td>"上月链路 A 成交额多少" → 指标意图识别 + 模板匹配生成图表(内部指标有限,不做通用 NL2SQL,保证准确)</td></tr>
+    <tr><td>待办提取</td><td>沟通记录中的"下周一跟进""9/5 前打款" → 自动生成待办与提醒</td></tr>
+  </table>
+
+  <h3>6.6 AI 技术架构与成本</h3>
+  <table>
+    <tr><th style="width:150px">层级</th><th style="width:240px">用途</th><th>建议模型(Gemini 路线)</th></tr>
+    <tr><td>主模型</td><td>匹配理由、风险解读、周报、订单摘要、语义兼容评分</td><td><b>Gemini 2.5 Flash</b>(已选定);建议后续升级 <b>Gemini 3 Flash</b>(OCR 与推理更强、单价更低)</td></tr>
+    <tr><td>轻量抽取层</td><td>字段抽取、事件提取、负面信号、待办提取</td><td>同用 Gemini 2.5 Flash(Flash 档已足够轻快,调用量经网关去重)</td></tr>
+    <tr><td>向量检索</td><td>相似主体推荐、语义搜索</td><td>Gemini Embedding 模型</td></tr>
+    <tr><td>OCR 识别</td><td>证照、余额照片、资信证明、视频验资</td><td>Gemini 原生视觉识别(图片/PDF 直接送模型;<b>视频先经服务端 ffmpeg 抽帧</b>,帧图片再送模型);关键数字字段可选腾讯云 OCR 双通道校验</td></tr>
+  </table>
+  <div class="callout ok"><b>网络与合规结论:</b>服务器部署于<b>腾讯云新加坡节点</b>,可直接访问 Google 生态服务,Gemini API 无需中转,延迟低、连接稳定。需团队确认的一点:验资视频、资信证明、余额照片等敏感材料将发送至 Google 服务器进行 AI 处理——这与"数据存放新加坡"的部署策略一致,确认即可。AI 网关设计保证供应商可随时切换,业务代码零改动。</div>
+  <ul>
+    <li><b>AI 网关</b>:后端统一 AI 服务层——Prompt 模板管理、任务路由、敏感字段脱敏、超时重试与<b>降级</b>(模型不可用时功能自动退回规则模式,不影响主流程)、调用日志与成本统计;</li>
+    <li><b>供应商不绑定</b>:网关层抽象模型接口,Gemini/DeepSeek/混元可随时切换;</li>
+    <li><b>成本</b>:3-5 人使用强度,日均调用约 200-500 次(以短文本抽取为主,单次成本低),Gemini Flash 档月度 API 成本约 ¥30-150;设月度成本封顶告警。</li>
+  </ul>
+</section>
+
+<!-- ============ 07 数据模型 ============ -->
+<section id="s7">
+  <div class="sec-head"><div class="sec-num">07</div><h2 class="sec-title">数据模型与审计日志</h2></div>
+  <div class="sec-desc">三大域的实体关系,以及贯穿全系统的审计日志表。</div>
+
+  <h3>7.1 核心实体关系(简化 ER)</h3>
+  <div class="card">
+    <h4 style="color:#1D4ED8">主体域</h4>
+    <div class="grid3" style="font-size:12.5px">
+      <div>
+        <b>product_lines 产品线</b><br>型号 · 类别 · 状态
+        <br><br><b>overseas_chains 海外链路方</b><br>名称 · 区域 · 联系人 · 备注
+        <br><br><b>suppliers 上游供货方</b><br>基础/交易/保障/评价字段<br>← chain_id 必填 · owner · version<br>配额见下
+      </div>
+      <div>
+        <b>supplier_quotas 批次配额</b><br>supplier_id · 产品线 · 批次号<br>数量 · 产生/结束时间 · 状态
+        <br><br><b>customers 下游客户</b><br>基础/账户/意向/验资/画像字段<br>owner · version
+        <br><br><b>middle_layers 中间层</b><br>基础/目的(多选)/费率 · 层级<br>owner · version
+      </div>
+      <div>
+        <b>communications 沟通记录</b><br>主体类型+ID · 时间 · 方式 · 内容<br>下一步 · 附件(append-only)
+        <br><br><b>附件存储</b><br>文件路径 · 上传人 · 关联实体<br>下载留痕
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h4 style="color:#0F766E">协同域</h4>
+    <div class="grid3" style="font-size:12.5px">
+      <div>
+        <b>publications 看板发布</b><br>类型(需求/供货)· 型号 · 数量<br>价格区间 · 有效期 · 可见范围
+        <br><br><b>match_results 匹配结果</b><br>supplier_id × customer_id<br>评分 · 命中条件 · 状态
+      </div>
+      <div>
+        <b>orders 订单</b><br>编号 · 型号 · 数量 · 金额 · 币种<br>上游/下游/中间层 · 采购方式<br>协议附件 · 状态
+        <br><br><b>order_tracks 跟踪事件</b><br>order_id · 分类(货源/资金/到货/<br>交付/违约/其他)· 内容 · 附件
+      </div>
+      <div>
+        <b>breaches 违约事项</b><br>order_id · 违约方 · 事项<br>处理方案 · 履约状态
+        <br><br><b>notifications 通知</b><br>接收人 · 类型(共享申请/匹配/<br>到期提醒/冲突)· 已读状态
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h4 style="color:#7C3AED">系统域</h4>
+    <div class="grid3" style="font-size:12.5px">
+      <div>
+        <b>users 用户</b><br>账号 · 密码(bcrypt)· 角色<br>姓名 · 联系方式 · 状态
+        <br><br><b>data_shares 共享关系</b><br>A ↔ B · 范围(全部/上游/下游/中间层)<br>状态(申请/生效/解除)
+      </div>
+      <div>
+        <b>user_priorities 优先级</b><br>user_id · 主体类型 · 主体ID · 优先级
+        <br><br><b>detail_requests 详情申请</b><br>匹配结果 · 申请人 · 批准人 · 状态
+      </div>
+      <div>
+        <b>audit_logs 审计日志(只增不改)</b><br>user_id · 动作 · 实体类型+ID<br>改前值(JSON)· 改后值(JSON)<br>IP · 时间
+        <br><br><b>login_logs 登录日志</b><br>user_id · IP · 时间 · 结果
+      </div>
+    </div>
+  </div>
+  <p class="tbl-cap">关键约束:① 所有主体表带 owner + version + created_at + updated_at + last_editor(最后维护人);② 沟通记录、跟踪事件、审计日志均为 append-only;③ 数据量评估:3-5 人、年增量约数万条记录,MySQL 单实例轻松承载,无需分库分表。</p>
+
+  <h3>7.2 审计日志设计</h3>
+  <table>
+    <tr><th style="width:160px">字段</th><th>说明</th></tr>
+    <tr><td>id / created_at</td><td>自增主键、精确到秒的操作时间</td></tr>
+    <tr><td>user_id</td><td>操作人(哪个账户)</td></tr>
+    <tr><td>action</td><td>动作:创建 / 更新 / 删除(软删)/ 状态变更 / 共享申请·批准·解除 / 详情申请·批准 / 登录 / 导出等</td></tr>
+    <tr><td>entity_type / entity_id</td><td>操作对象(供货方/客户/中间层/配额/看板/订单/跟踪事件…)</td></tr>
+    <tr><td>old_value / new_value(JSON)</td><td><b>改前值 / 改后值</b>,字段级差异,可直接渲染"谁把什么从 A 改成了 B"</td></tr>
+    <tr><td>ip / user_agent</td><td>操作来源,便于安全排查</td></tr>
+  </table>
+  <div class="callout warn"><b>规则:</b>审计日志<b>只增不改、不可删除</b>(管理员也不可),提供按人/按实体/按时间/按动作的检索;主体详情页内嵌"该记录的变更历史"时间线,让每一次维护更新都看得见。</div>
+</section>
+
+<!-- ============ 08 后台任务 ============ -->
+<section id="s8">
+  <div class="sec-head"><div class="sec-num">08</div><h2 class="sec-title">后台任务与通知机制</h2></div>
+  <div class="sec-desc">系统部署后 7×24 自动运行,无人值守。</div>
+  <table>
+    <tr><th style="width:170px">频率</th><th>任务</th></tr>
+    <tr><td>每 5 分钟</td><td>编辑心跳清理(释放超时编辑锁)</td></tr>
+    <tr><td>每小时</td><td>批次配额状态自动流转(可用 → 锁定/用完/过期);看板发布到期自动关闭;增量匹配跑批</td></tr>
+    <tr><td>每日 02:00</td><td>全量匹配重算(数据变更较少时可选每周)</td></tr>
+    <tr><td>每日 09:00</td><td>提醒推送:配额 7 天内到期、验资复核到期、看板即将过期、沟通"下一步计划"到期</td></tr>
+    <tr><td>每日 03:00</td><td>数据库全量备份(本地保留 30 天)+ 上传 COS 冷备;备份失败告警(邮件/短信可选)</td></tr>
+    <tr><td>实时</td><td>WebSocket 推送:共享申请与审批结果、匹配结果更新、订单状态变更、编辑冲突提醒、到期预警</td></tr>
+    <tr><td>每周日</td><td>日志轮转压缩;临时文件清理</td></tr>
+  </table>
+  <p>通知渠道:站内消息中心(顶部铃铛,未读角标)+ 可选的邮件/企业微信机器人转发(二期待配置)。</p>
+</section>
+
+<!-- ============ 09 UI 规范 ============ -->
+<section id="s9">
+  <div class="sec-head"><div class="sec-num">09</div><h2 class="sec-title">UI/UX 设计规范与效果图</h2></div>
+  <div class="sec-desc">简单、高级、科技感;色调克制、留白充分、信息密度适中。</div>
+
+  <h3>9.1 设计语言</h3>
+  <div class="card">
+    <h4>色板(全系统仅 7 个主色)</h4>
+    <div class="swatches">
+      <div class="sw"><div class="c" style="background:#2563EB"></div><div class="l"><b>科技蓝 · 主色</b>按钮/链接/选中态</div></div>
+      <div class="sw"><div class="c" style="background:#0F172A"></div><div class="l"><b>深空黑</b>侧边栏/标题/强调</div></div>
+      <div class="sw"><div class="c" style="background:#06B6D4"></div><div class="l"><b>青 · 辅助</b>标签/图表辅助色</div></div>
+      <div class="sw"><div class="c" style="background:#F5F7FB"></div><div class="l"><b>浅灰蓝 · 背景</b>页面底色</div></div>
+      <div class="sw"><div class="c" style="background:#10B981"></div><div class="l"><b>绿 · 成功</b>已完成/验资通过</div></div>
+      <div class="sw"><div class="c" style="background:#F59E0B"></div><div class="l"><b>琥珀 · 警告</b>到期/冲突/编辑中</div></div>
+      <div class="sw"><div class="c" style="background:#EF4444"></div><div class="l"><b>红 · 危险</b>违约/删除/失败</div></div>
+    </div>
+    <ul>
+      <li><b>布局</b>:左侧深色固定导航(展开式分组:供需看板 / 匹配中心 / 主体管理〔上游·中间层·下游·链路方〕/ 订单跟踪 / 分析中台 / 共享管理 / 系统设置),顶栏含全局搜索、消息铃铛、当前用户;</li>
+      <li><b>风格</b>:卡片式内容区、圆角 12px、轻阴影、大留白;状态一律"色点+文字"表达(绿=正常,琥珀=预警,红=异常);数字用等宽字体;动效克制(仅悬停/加载);禁止大红大绿堆砌;</li>
+      <li><b>信息层级</b>:列表页只展示关键列(名称/型号/状态/维护人/更新时间),完整信息进详情;详情页按字段分组卡片呈现,组间留白;</li>
+      <li><b>交互反馈</b>:所有写操作有成功/失败提示;版本冲突弹差异对比;删除必二次确认并填写原因(写入审计)。</li>
+    </ul>
+  </div>
+
+  <h3>9.2 界面效果图(示意)</h3>
+  <div class="mock-grid">
+
+    <!-- 登录 -->
+    <div>
+      <div class="mock">
+        <div class="mock-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="mock-url">https://sc-link.example.com/login</span></div>
+        <div class="mock-body" style="background:linear-gradient(160deg,#0F172A,#1E3A8A); height:190px; display:flex; align-items:center; justify-content:center;">
+          <div style="background:#fff; border-radius:12px; padding:22px 26px; width:230px; box-shadow:0 16px 40px rgba(0,0,0,.35)">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+              <div style="width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#2563EB,#06B6D4)"></div>
+              <b style="font-size:13px; color:#0F172A">SC-Link 供应链协同中台</b>
+            </div>
+            <div style="border:1px solid #E2E8F0; border-radius:7px; padding:7px 10px; color:#94A3B8; margin-bottom:8px;">账号</div>
+            <div style="border:1px solid #E2E8F0; border-radius:7px; padding:7px 10px; color:#94A3B8; margin-bottom:12px;">密码</div>
+            <div style="background:#2563EB; color:#fff; text-align:center; border-radius:7px; padding:7px; font-size:11px;">登 录</div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>登录页</b> 深色科技底 + 居中卡片</div>
+    </div>
+
+    <!-- 供货方列表 -->
+    <div>
+      <div class="mock">
+        <div class="mock-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="mock-url">主体管理 / 上游供货方</span></div>
+        <div class="mock-body" style="display:flex; gap:10px; padding:0;">
+          <div class="m-sidebar">
+            <div class="logo">SC-Link</div>
+            <div>供需看板</div><div>匹配中心</div><div class="on">主体管理</div>
+            <div>订单跟踪</div><div>分析中台</div><div>共享管理</div>
+          </div>
+          <div style="flex:1; padding:12px 12px 12px 0;">
+            <div style="display:flex; gap:6px; margin-bottom:8px;">
+              <div style="flex:1; border:1px solid #E2E8F0; border-radius:6px; padding:4px 8px; color:#94A3B8;">搜索名称/联系人</div>
+              <div class="m-btn">+ 新增</div>
+            </div>
+            <div class="m-row" style="background:#F8FAFC; color:#64748B; font-weight:bold;"><span style="width:95px">名称</span><span style="width:64px">链路方</span><span style="width:56px">类型</span><span style="width:52px">配额</span><span style="flex:1">维护人/时间</span></div>
+            <div class="m-row"><span style="width:95px; font-weight:bold; color:#1E293B">深圳芯航科技</span><span style="width:64px">链路 A</span><span style="width:56px"><span class="m-tag blue">现货</span></span><span style="width:52px"><span class="m-tag green">可用 300</span></span><span style="flex:1; color:#64748B">张三 · 08-17</span></div>
+            <div class="m-row"><span style="width:95px; font-weight:bold; color:#1E293B">上海铭芯贸易</span><span style="width:64px">链路 A</span><span style="width:56px"><span class="m-tag amber">准现货</span></span><span style="width:52px"><span class="m-tag amber">7天到期</span></span><span style="flex:1; color:#64748B">李四 · 08-16</span></div>
+            <div class="m-row"><span style="width:95px; font-weight:bold; color:#1E293B">香港启航国际</span><span style="width:64px">链路 B</span><span style="width:56px"><span class="m-tag gray">期货</span></span><span style="width:52px"><span class="m-tag gray">过期</span></span><span style="flex:1; color:#64748B">王五 · 08-12</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>上游供货方列表</b> 深色导航 + 关键列 + 状态色标</div>
+    </div>
+
+    <!-- 供货方详情 -->
+    <div>
+      <div class="mock">
+        <div class="mock-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="mock-url">主体管理 / 上游供货方 / 详情</span></div>
+        <div class="mock-body">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <b style="font-size:13px; color:#0F172A">深圳芯航科技</b>
+            <span class="m-tag blue">现货</span><span class="m-tag green">保函·银行</span><span class="m-tag gray">一手</span>
+          </div>
+          <div style="color:#64748B; font-size:10px; margin-bottom:8px;">所属链路方:海外链路方 A · 维护人:张三 · 最后更新 2026-08-17 14:30</div>
+          <div class="m-row" style="justify-content:space-between; color:#94A3B8; border-bottom:2px solid #E2E8F0;"><span style="color:#2563EB; font-weight:bold">基础信息</span><span style="color:#2563EB; font-weight:bold">交易属性</span><span style="color:#2563EB; font-weight:bold">反向保障</span><span style="color:#2563EB; font-weight:bold">配额</span></div>
+          <div class="m-row"><span style="width:76px; color:#94A3B8">采购方式</span><span style="flex:1">预付款 / 信用证-跨境</span></div>
+          <div class="m-row"><span style="width:76px; color:#94A3B8">报价</span><span style="flex:1">¥1,420,000 / 台(B300)</span><span style="width:76px; color:#94A3B8">起订量</span><span>10 台</span></div>
+          <div class="m-row"><span style="width:76px; color:#94A3B8">保障</span><span style="flex:1">保函 30% · 银行开具</span></div>
+          <div style="margin-top:8px; font-size:10px; color:#64748B;">批次配额 QB-2608-01 · 500 台</div>
+          <div style="height:8px; background:#E2E8F0; border-radius:4px; margin:4px 0 3px; overflow:hidden;"><div style="width:62%; height:100%; background:linear-gradient(90deg,#2563EB,#06B6D4);"></div></div>
+          <div style="display:flex; justify-content:space-between; font-size:9px; color:#94A3B8;"><span>产生 07-01</span><span>已售 190</span><span>结束 09-30</span></div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>供货方详情</b> 字段分组 + 配额进度条</div>
+    </div>
+
+    <!-- 供需看板 -->
+    <div>
+      <div class="mock">
+        <div class="mock-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="mock-url">供需看板</span></div>
+        <div class="mock-body">
+          <div style="display:flex; gap:6px; margin-bottom:8px;">
+            <span class="m-tag blue" style="font-size:10px">全部</span><span class="m-tag gray" style="font-size:10px">采购需求</span><span class="m-tag gray" style="font-size:10px">供货信息</span>
+            <span style="margin-left:auto" class="m-btn">+ 发布</span>
+          </div>
+          <div style="border:1px solid #E2E8F0; border-radius:8px; padding:9px; margin-bottom:7px;">
+            <div><b>求购 B300 整机 20 台</b><span class="m-tag blue">采购需求</span><span class="m-tag gray">公开</span></div>
+            <div style="color:#64748B; margin:3px 0;">预算 ¥1,380-1,450 万 · 意向:信用证-国内 · 期望 9 月交付</div>
+            <div style="color:#94A3B8; font-size:9.5px;">张三 · 08-18 10:02 · 有效期至 08-25</div>
+          </div>
+          <div style="border:1px solid #E2E8F0; border-radius:8px; padding:9px; margin-bottom:7px;">
+            <div><b>B300 现货 50 台 · 链路 A 一手</b><span class="m-tag green">供货信息</span><span class="m-tag gray">公开</span></div>
+            <div style="color:#64748B; margin:3px 0;">¥1,420,000/台 · 预付款 · 保函 30% · 起订 10 台</div>
+            <div style="color:#94A3B8; font-size:9.5px;">李四 · 08-17 16:40 · 有效期至 08-31</div>
+          </div>
+          <div style="border:1px solid #E2E8F0; border-radius:8px; padding:9px;">
+            <div><b>求购 B300 准现货 8 台</b><span class="m-tag blue">采购需求</span><span class="m-tag amber">私密</span></div>
+            <div style="color:#94A3B8; font-size:9.5px;">仅自己可见 · 王五 · 08-18 09:15</div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>供需看板</b> 默认公开,可设私密(私密带角标)</div>
+    </div>
+
+    <!-- 匹配结果 -->
+    <div>
+      <div class="mock">
+        <div class="mock-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="mock-url">匹配中心 / 结果</span></div>
+        <div class="mock-body">
+          <div style="color:#94A3B8; font-size:10px; margin-bottom:6px;">需求「求购 B300 整机 20 台」匹配到 3 条供货方</div>
+          <div style="border:1px solid #BFDBFE; border-radius:8px; padding:9px; margin-bottom:7px; background:#F8FAFF;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="m-tag green" style="font-size:10px; font-weight:bold">匹配度 92%</span>
+              <b>深圳芯航科技(供货方)</b><span class="m-tag gray">我维护的 · 全量显示</span>
+            </div>
+            <div style="color:#64748B; margin:3px 0;">报价 ¥1,420,000 · 现货 300 台 · 预付款+跨境证 · 保函 30% · 联系人 陈总 138****</div>
+          </div>
+          <div style="border:1px solid #E2E8F0; border-radius:8px; padding:9px; margin-bottom:7px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="m-tag amber" style="font-size:10px; font-weight:bold">匹配度 78%</span>
+              <b>上海铭芯贸易(供货方)</b><span class="m-tag blue">李四维护 · 简要信息</span>
+            </div>
+            <div style="color:#64748B; margin:3px 0;">B300 · 准现货 150 台 · 价格区间 ¥1.4x 万 · 更新时间 08-16</div>
+            <div style="text-align:right;"><span class="m-btn ghost" style="font-size:9.5px">申请查看详情</span></div>
+          </div>
+          <div style="border:1px solid #E2E8F0; border-radius:8px; padding:9px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="m-tag gray" style="font-size:10px; font-weight:bold">匹配度 61%</span>
+              <b>香港启航国际(供货方)</b><span class="m-tag blue">王五维护 · 简要信息</span>
+            </div>
+            <div style="color:#64748B; margin:3px 0;">B300 · 期货 · 跨境证 · 起订 20 台 · 更新时间 08-12</div>
+            <div style="text-align:right;"><span class="m-btn ghost" style="font-size:9.5px">申请查看详情</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>匹配结果</b> 自己数据全量、他人数据简要+维护人</div>
+    </div>
+
+    <!-- 分析中台 -->
+    <div>
+      <div class="mock">
+        <div class="mock-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="mock-url">分析中台</span></div>
+        <div class="mock-body">
+          <div style="display:flex; gap:7px; margin-bottom:9px;">
+            <div style="flex:1; border:1px solid #E2E8F0; border-radius:8px; padding:7px;"><div style="color:#94A3B8; font-size:9px;">上游供货方</div><b style="font-size:14px; color:#0F172A">23</b><span class="m-tag green" style="font-size:8.5px">+3 本周</span></div>
+            <div style="flex:1; border:1px solid #E2E8F0; border-radius:8px; padding:7px;"><div style="color:#94A3B8; font-size:9px;">下游客户</div><b style="font-size:14px; color:#0F172A">31</b><span class="m-tag green" style="font-size:8.5px">+2 本周</span></div>
+            <div style="flex:1; border:1px solid #E2E8F0; border-radius:8px; padding:7px;"><div style="color:#94A3B8; font-size:9px;">在途订单</div><b style="font-size:14px; color:#0F172A">7</b><span class="m-tag amber" style="font-size:8.5px">2 笔付款中</span></div>
+            <div style="flex:1; border:1px solid #E2E8F0; border-radius:8px; padding:7px;"><div style="color:#94A3B8; font-size:9px;">本月成交额</div><b style="font-size:14px; color:#0F172A">¥4,260万</b></div>
+          </div>
+          <div style="display:flex; gap:7px;">
+            <div style="flex:1.2; border:1px solid #E2E8F0; border-radius:8px; padding:8px;">
+              <div style="color:#94A3B8; font-size:9px; margin-bottom:4px;">近 12 月新增主体趋势</div>
+              <svg viewBox="0 0 150 56" width="100%">
+                <polyline points="5,48 18,42 31,44 44,36 57,38 70,30 83,33 96,24 109,26 122,18 135,20 146,10" fill="none" stroke="#2563EB" stroke-width="2"/>
+                <polyline points="5,50 18,48 31,49 44,44 57,45 70,41 83,42 96,38 109,39 122,34 135,35 146,30" fill="none" stroke="#06B6D4" stroke-width="1.6"/>
+              </svg>
+            </div>
+            <div style="flex:1; border:1px solid #E2E8F0; border-radius:8px; padding:8px;">
+              <div style="color:#94A3B8; font-size:9px; margin-bottom:4px;">成交额按链路</div>
+              <svg viewBox="0 0 90 56" width="100%">
+                <rect x="8" y="26" width="14" height="24" rx="3" fill="#2563EB"/>
+                <rect x="28" y="16" width="14" height="34" rx="3" fill="#06B6D4"/>
+                <rect x="48" y="34" width="14" height="16" rx="3" fill="#93C5FD"/>
+                <rect x="68" y="22" width="14" height="28" rx="3" fill="#CBD5E1"/>
+              </svg>
+            </div>
+            <div style="flex:1; border:1px solid #E2E8F0; border-radius:8px; padding:8px;">
+              <div style="color:#94A3B8; font-size:9px; margin-bottom:4px;">验资完成率</div>
+              <svg viewBox="0 0 60 60" width="70%" style="display:block; margin:2px auto;">
+                <circle cx="30" cy="30" r="24" fill="none" stroke="#E2E8F0" stroke-width="8"/>
+                <circle cx="30" cy="30" r="24" fill="none" stroke="#10B981" stroke-width="8" stroke-dasharray="102 151" stroke-linecap="round" transform="rotate(-90 30 30)"/>
+                <text x="30" y="35" text-anchor="middle" font-size="13" fill="#0F172A" font-weight="bold">68%</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>分析中台</b> KPI 卡片 + 趋势/分布/完成率</div>
+    </div>
+
+    <!-- 订单跟踪 -->
+    <div>
+      <div class="mock">
+        <div class="mock-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="mock-url">订单跟踪 / DD-2608-012</span></div>
+        <div class="mock-body">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <b style="font-size:12px; color:#0F172A">DD-2608-012 · B300 × 20 台</b><span class="m-tag green">货源已确认</span>
+          </div>
+          <div style="display:flex; align-items:center; margin-bottom:10px;">
+            <div style="width:12px;height:12px;border-radius:50%;background:#10B981"></div><div style="flex:1;height:2px;background:#10B981"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#10B981"></div><div style="flex:1;height:2px;background:#10B981"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#10B981"></div><div style="flex:1;height:2px;background:#2563EB"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#2563EB; box-shadow:0 0 0 3px rgba(37,99,235,.2)"></div><div style="flex:1;height:2px;background:#E2E8F0"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#E2E8F0"></div><div style="flex:1;height:2px;background:#E2E8F0"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#E2E8F0"></div><div style="flex:1;height:2px;background:#E2E8F0"></div>
+            <div style="width:12px;height:12px;border-radius:50%;background:#E2E8F0"></div>
+          </div>
+          <div style="border-left:2px solid #E2E8F0; padding-left:10px;">
+            <div style="margin-bottom:6px;"><span class="m-tag blue">货源</span> 08-16 配额 QB-2608-01 锁定 20 台 · 张三</div>
+            <div style="margin-bottom:6px;"><span class="m-tag green">资金</span> 08-15 收到定金 ¥568 万(20%)· 张三</div>
+            <div style="margin-bottom:6px;"><span class="m-tag amber">资金</span> 08-18 尾款节点提醒:9 月 5 日前付清</div>
+            <div><span class="m-tag gray">协议</span> 08-14 协议已签订并上传 · 协议编号 HT-2608-101</div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-cap"><b>订单跟踪</b> 状态步骤条 + 分类事件时间线</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ 10 安全 ============ -->
+<section id="s10">
+  <div class="sec-head"><div class="sec-num">10</div><h2 class="sec-title">安全设计</h2></div>
+  <div class="sec-desc">虽然是内部小系统,数据是商业核心资产,安全不妥协。</div>
+  <table>
+    <tr><th style="width:180px">层面</th><th>措施</th></tr>
+    <tr><td>传输安全</td><td>全站强制 HTTPS(WSS),Let's Encrypt 自动续期;HSTS 开启。</td></tr>
+    <tr><td>认证安全</td><td>密码 bcrypt 加盐哈希;JWT 7 天有效期 + 刷新机制;连续 5 次登录失败锁定账号 30 分钟并记录日志;管理员可强制下线某账号。</td></tr>
+    <tr><td>数据隔离</td><td><b>后端强制校验数据归属</b>:所有查询/写入按 owner 与共享关系过滤,前端隐藏不构成安全边界;API 层统一鉴权中间件。</td></tr>
+    <tr><td>注入与攻击</td><td>SQL 全参数化(ORM);XSS 输出转义;CSRF 防护;接口限流。</td></tr>
+    <tr><td>附件安全</td><td>上传白名单(类型/大小);存储于非公开目录,经鉴权接口下载,下载留痕。</td></tr>
+    <tr><td>备份容灾</td><td>每日全量备份(本地 30 天 + COS 冷备);备份失败告警;提供一键恢复脚本与季度恢复演练。</td></tr>
+    <tr><td>审计不可抵赖</td><td>审计日志只增不改,管理员亦不可删除;提供按人/实体/时间的检索与导出。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 11 路线图 ============ -->
+<section id="s11">
+  <div class="sec-head"><div class="sec-num">11</div><h2 class="sec-title">实施路线图</h2></div>
+  <div class="sec-desc">按四周一个迭代推进,每阶段结束有可验收成果。</div>
+  <table class="roadmap">
+    <tr><th style="width:150px">阶段</th><th style="width:220px">交付内容</th><th>验收标准</th></tr>
+    <tr><td>阶段一(第 1-2 周)<br>基础框架</td><td>Docker 部署骨架;用户体系(管理员/一般用户);数据共享申请-审批;上游/下游/中间层/链路方/配额全部主体管理;四种验资材料建档与有效期管理;沟通记录;审计日志;<b>AI 网关骨架(Gemini 接入、脱敏、调用日志)</b>。</td><td>可录入维护全部主体;共享生效且范围正确;任一修改可在审计日志查到"谁、何时、改了什么";验资材料可上传建档并自动算有效期。</td></tr>
+    <tr><td>阶段二(第 3-4 周)<br>匹配中枢</td><td>供需看板发布(公开/私密);自动匹配引擎(过滤+评分+归属裁剪);优先级管理;详情申请-批准;<b>AI:验资材料 AI 初审(视频抽帧+Gemini 识别)、看板语义解析、匹配理由生成</b>。</td><td>发布即时出匹配结果;评分排序符合预期;他人数据只显示简要信息+维护人;验资上传自动生成 AI 初审报告。</td></tr>
+    <tr><td>阶段三(第 5-6 周)<br>订单与分析</td><td>订单录入与状态机;跟踪事件时间线;违约事项跟踪;分析中台(趋势/分布/预警);WebSocket 通知;定时任务全量上线;<b>AI:语义兼容评分、沟通→跟踪事件提取、订单智能摘要、异常预警</b>。</td><td>一单从签订到交付全流程可跟踪;看板指标与业务数据一致;到期提醒准时推送;粘贴沟通记录可自动生成事件草稿。</td></tr>
+    <tr><td>阶段四(第 7 周)<br>打磨上线</td><td>UI 整体打磨(科技感细节);安全加固;备份恢复演练;历史 Excel 数据导入;账号初始化;<b>AI:主体风险画像、智能周报、自然语言查询、相似推荐、反馈学习调优</b>;正式部署腾讯云并切换使用。</td><td>全员真实场景试用一周无阻断问题;历史数据完整入库;AI 建议均带依据、可溯源、可人工修正;正式环境运行稳定。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 12 风险 ============ -->
+<section id="s12">
+  <div class="sec-head"><div class="sec-num">12</div><h2 class="sec-title">风险与应对</h2></div>
+  <table>
+    <tr><th style="width:180px">风险</th><th>应对</th></tr>
+    <tr><td>多人共改同一数据导致覆盖</td><td>版本号乐观锁 + 编辑心跳 + 冲突草稿副本 + 全量审计(见 3.3),已从机制上杜绝。</td></tr>
+    <tr><td>数据敏感(价格/配额/客户账户)</td><td>归属隔离 + 共享审批 + 字段级可见控制 + HTTPS + 审计不可删。</td></tr>
+    <tr><td>单台服务器故障</td><td>轻量服务器故障率低;每日备份 + COS 冷备,可在 1 小时内换机恢复;对 3-5 人内部系统,风险可接受。</td></tr>
+    <tr><td>业务演进(新交易模式/新字段)</td><td>产品线独立维度;主体字段分组化设计,新增字段仅加列;中间层"目的"为多选字典,可扩展。</td></tr>
+    <tr><td>用户操作习惯(不习惯填结构化字段)</td><td>提供 Excel 批量导入模板;必填项最小化;历史数据一次性导入;上线前培训 1 小时。</td></tr>
+    <tr><td>服务器运维能力不足</td><td>Docker 一键部署/升级/备份脚本;本方案附运维手册;必要时由我远程协助。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 13 待确认 ============ -->
+<section id="s13">
+  <div class="sec-head"><div class="sec-num">13</div><h2 class="sec-title">待确认事项清单</h2></div>
+  <div class="sec-desc">以下事项确认后,即可按路线图启动阶段一。</div>
+  <div class="card">
+    <ol>
+      <li><b>系统命名</b>:暂定 "SC-Link 供应链协同中台",是否有其他偏好?(英文代号用于登录页与域名前缀)</li>
+      <li><b>技术栈确认</b>:前端 Vue 3、后端 Python FastAPI、数据库 MySQL 8.0 —— 是否认可?(团队若更熟 Java/Node,可调整)</li>
+      <li><b>共享粒度</b>:共享范围按"全部/上游/下游/中间层"分类选择,是否满足?是否需要"按单个主体共享"?</li>
+      <li><b>管理员编辑权</b>:建议管理员可协助修改他人数据(留痕),是否认可?</li>
+      <li><b>历史数据</b>:现有数据是否以 Excel 形式存在?上线时是否需要批量导入(需要的话请提供表样)?</li>
+      <li><b>账号初始化</b>:3-5 位用户名单与角色(几位管理员),确定后由管理员在系统内创建。</li>
+      <li><b>腾讯云资源</b>:确认购买轻量应用服务器(2C4G,新加坡节点)+ 域名,购买后提供服务器信息即可开始部署。</li>
+      <li><b>通知渠道</b>:一期仅站内通知是否足够?是否需要配置企业微信机器人/邮件提醒?</li>
+      <li><b>AI 供应商与数据合规</b>:服务器在新加坡节点,Google 服务可达性无问题;仅需确认:验资视频、资信证明、余额照片等敏感材料将发送至 Google 服务器进行 AI 处理(与数据存放新加坡的部署策略一致)。确认后锁定 Gemini 2.5 Flash,并建议后续评估升级 Gemini 3 Flash(OCR 与推理更强、成本更低)。</li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  SC-Link 供应链协同分析中台 · 设计方案 v0.2 · 2026-08-18<br>
+  本文档供内部评审确认,确认后按第 11 节路线图推进实施
+</footer>
+
+</div>
+</body>
+</html>
