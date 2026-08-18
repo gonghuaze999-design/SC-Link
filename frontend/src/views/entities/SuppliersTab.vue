@@ -134,8 +134,8 @@ function editorName(id: number | null) {
   return userNames.value[id] || `用户#${id}`
 }
 
-const inputCls = 'w-full border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
-const labelCls = 'block text-xs text-muted mb-1.5'
+const inputCls = 'w-full border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
+const labelCls = 'block text-[13px] text-muted mb-1.5'
 </script>
 
 <template>
@@ -151,46 +151,46 @@ const labelCls = 'block text-xs text-muted mb-1.5'
           <option value="">全部链路方</option>
           <option v-for="c in chains" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
-        <button class="px-4 py-2 rounded-lg text-xs border border-line text-muted hover:bg-slate-50 transition" @click="load">搜索</button>
-        <button class="ml-auto px-4 py-2 rounded-lg text-xs bg-primary text-white transition" @click="openCreate">+ 新增供货方</button>
+        <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition" @click="load">搜索</button>
+        <button class="ml-auto px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white transition whitespace-nowrap shrink-0" @click="openCreate">+ 新增供货方</button>
       </div>
-      <table class="w-full text-[13px]">
+      <table class="w-full text-sm">
         <thead>
-          <tr class="text-left text-muted text-xs border-b border-line">
-            <th class="px-4 py-3 font-medium">名称</th>
-            <th class="px-4 py-3 font-medium">链路方</th>
-            <th class="px-4 py-3 font-medium">类型</th>
-            <th class="px-4 py-3 font-medium">采购方式</th>
-            <th class="px-4 py-3 font-medium">报价</th>
-            <th class="px-4 py-3 font-medium">保障</th>
-            <th class="px-4 py-3 font-medium">合作状态</th>
-            <th class="px-4 py-3 font-medium">维护人/更新</th>
-            <th class="px-4 py-3 font-medium text-right">操作</th>
+          <tr class="text-left text-muted text-[13px] border-b border-line">
+            <th class="px-5 py-3.5 font-medium">名称</th>
+            <th class="px-5 py-3.5 font-medium">链路方</th>
+            <th class="px-5 py-3.5 font-medium">类型</th>
+            <th class="px-5 py-3.5 font-medium">采购方式</th>
+            <th class="px-5 py-3.5 font-medium">报价</th>
+            <th class="px-5 py-3.5 font-medium">保障</th>
+            <th class="px-5 py-3.5 font-medium">合作状态</th>
+            <th class="px-5 py-3.5 font-medium">维护人/更新</th>
+            <th class="px-5 py-3.5 font-medium text-right">操作</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading"><td colspan="9" class="px-4 py-8 text-center text-muted">加载中…</td></tr>
           <tr v-else-if="!rows.length"><td colspan="9" class="px-4 py-8 text-center text-muted">暂无供货方,点击右上角新增</td></tr>
           <tr v-for="s in rows" :key="s.id" class="border-b border-line hover:bg-slate-50/60 transition">
-            <td class="px-4 py-3">
+            <td class="px-5 py-3.5">
               <div class="font-medium">{{ s.name }}</div>
-              <div v-if="s.short_name" class="text-[11px] text-muted">{{ s.short_name }}</div>
+              <div v-if="s.short_name" class="text-xs text-muted">{{ s.short_name }}</div>
             </td>
-            <td class="px-4 py-3 text-muted">{{ chainName(s.chain_id) }}</td>
-            <td class="px-4 py-3">
-              <span class="text-[11px] px-2 py-0.5 rounded" :class="s.goods_type === '现货' ? 'bg-blue-50 text-blue-600' : s.goods_type === '准现货' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'">{{ s.goods_type }}</span>
+            <td class="px-5 py-3.5 text-muted">{{ chainName(s.chain_id) }}</td>
+            <td class="px-5 py-3.5">
+              <span class="text-xs px-2 py-0.5 rounded" :class="s.goods_type === '现货' ? 'bg-blue-50 text-blue-600' : s.goods_type === '准现货' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'">{{ s.goods_type }}</span>
             </td>
-            <td class="px-4 py-3 text-muted">{{ (s.procurement_modes || []).join(' / ') || '—' }}</td>
-            <td class="px-4 py-3" style="font-variant-numeric: tabular-nums">{{ s.price != null ? `${s.price.toLocaleString()} ${s.currency}` : '—' }}</td>
-            <td class="px-4 py-3 text-muted">{{ s.guarantee_type ? `${s.guarantee_type}${s.guarantee_ratio ? ' ' + s.guarantee_ratio : ''}` : '—' }}</td>
-            <td class="px-4 py-3">
-              <span class="text-[11px] px-2 py-0.5 rounded" :class="s.coop_status === '合作中' ? 'bg-green-50 text-green-600' : s.coop_status === '终止' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'">{{ s.coop_status }}</span>
+            <td class="px-5 py-3.5 text-muted">{{ (s.procurement_modes || []).join(' / ') || '—' }}</td>
+            <td class="px-5 py-3.5" style="font-variant-numeric: tabular-nums">{{ s.price != null ? `${s.price.toLocaleString()} ${s.currency}` : '—' }}</td>
+            <td class="px-5 py-3.5 text-muted">{{ s.guarantee_type ? `${s.guarantee_type}${s.guarantee_ratio ? ' ' + s.guarantee_ratio : ''}` : '—' }}</td>
+            <td class="px-5 py-3.5">
+              <span class="text-xs px-2 py-0.5 rounded" :class="s.coop_status === '合作中' ? 'bg-green-50 text-green-600' : s.coop_status === '终止' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'">{{ s.coop_status }}</span>
             </td>
-            <td class="px-4 py-3 text-muted text-xs">{{ editorName(s.last_editor_id) }}<br>{{ fmt(s.updated_at) }}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap">
-              <button class="text-xs text-primary hover:underline mr-3" @click="openDetail(s)">详情</button>
-              <button class="text-xs text-primary hover:underline mr-3" @click="openEdit(s)">编辑</button>
-              <button class="text-xs text-red-500 hover:underline" @click="remove(s)">删除</button>
+            <td class="px-5 py-3.5 text-muted text-[13px]">{{ editorName(s.last_editor_id) }}<br>{{ fmt(s.updated_at) }}</td>
+            <td class="px-5 py-3.5 text-right whitespace-nowrap">
+              <button class="text-[13px] text-primary hover:underline mr-3" @click="openDetail(s)">详情</button>
+              <button class="text-[13px] text-primary hover:underline mr-3" @click="openEdit(s)">编辑</button>
+              <button class="text-[13px] text-red-500 hover:underline" @click="remove(s)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -204,7 +204,7 @@ const labelCls = 'block text-xs text-muted mb-1.5'
           <div class="text-sm font-bold">{{ dialog.mode === 'create' ? '新增供货方' : `编辑:${dialog.target?.name}` }}</div>
         </div>
         <div class="p-6 grid grid-cols-2 gap-4">
-          <div class="col-span-2 text-xs font-bold text-primary pt-1">基础信息</div>
+          <div class="col-span-2 text-[13px] font-bold text-primary pt-1">基础信息</div>
           <div><label :class="labelCls">供货方名称 *</label><input v-model="form.name" :class="inputCls" /></div>
           <div><label :class="labelCls">简称</label><input v-model="form.short_name" :class="inputCls" /></div>
           <div><label :class="labelCls">注册地</label><input v-model="form.reg_location" :class="inputCls" /></div>
@@ -213,7 +213,7 @@ const labelCls = 'block text-xs text-muted mb-1.5'
           <div><label :class="labelCls">注册资本</label><input v-model="form.registered_capital" :class="inputCls" /></div>
           <div class="col-span-2"><label :class="labelCls">股权结构</label><textarea v-model="form.equity_structure" :class="inputCls" rows="2"></textarea></div>
 
-          <div class="col-span-2 text-xs font-bold text-primary pt-2">链路归属(必须标注海外链路方)</div>
+          <div class="col-span-2 text-[13px] font-bold text-primary pt-2">链路归属(必须标注海外链路方)</div>
           <div>
             <label :class="labelCls">所属海外链路方 *</label>
             <select v-model="form.chain_id" :class="inputCls">
@@ -223,11 +223,11 @@ const labelCls = 'block text-xs text-muted mb-1.5'
           </div>
           <div><label :class="labelCls">链路角色</label><select v-model="form.chain_role" :class="inputCls"><option value="">未设置</option><option v-for="r in chainRoles" :key="r" :value="r">{{ r }}</option></select></div>
 
-          <div class="col-span-2 text-xs font-bold text-primary pt-2">交易属性</div>
+          <div class="col-span-2 text-[13px] font-bold text-primary pt-2">交易属性</div>
           <div>
             <label :class="labelCls">采购方式(可多选)</label>
             <div class="flex gap-2">
-              <button v-for="m in modeOptions" :key="m" type="button" class="px-3 py-1.5 rounded-lg text-xs border transition" :class="((form.procurement_modes as string[]) || []).includes(m) ? 'border-primary bg-blue-50 text-primary' : 'border-line text-muted hover:border-slate-400'" @click="toggleMode(m)">{{ m }}</button>
+              <button v-for="m in modeOptions" :key="m" type="button" class="px-3 py-1.5 rounded-lg text-[13px] border transition" :class="((form.procurement_modes as string[]) || []).includes(m) ? 'border-primary bg-blue-50 text-primary' : 'border-line text-muted hover:border-slate-400'" @click="toggleMode(m)">{{ m }}</button>
             </div>
           </div>
           <div><label :class="labelCls">期货/现货/准现货</label><select v-model="form.goods_type" :class="inputCls"><option v-for="g in goodsTypes" :key="g" :value="g">{{ g }}</option></select></div>
@@ -239,7 +239,7 @@ const labelCls = 'block text-xs text-muted mb-1.5'
           <div><label :class="labelCls">发票类型</label><input v-model="form.invoice_type" :class="inputCls" /></div>
           <div class="col-span-2"><label :class="labelCls">付款节点(定金比例/尾款节点)</label><input v-model="form.payment_terms" :class="inputCls" /></div>
 
-          <div class="col-span-2 text-xs font-bold text-primary pt-2">反向保障</div>
+          <div class="col-span-2 text-[13px] font-bold text-primary pt-2">反向保障</div>
           <div><label :class="labelCls">保障措施</label><select v-model="form.guarantee_type" :class="inputCls"><option value="">未设置</option><option v-for="g in guaranteeTypes" :key="g" :value="g">{{ g }}</option></select></div>
           <div><label :class="labelCls">保函比例</label><input v-model="form.guarantee_ratio" :class="inputCls" placeholder="如 30%" /></div>
           <div><label :class="labelCls">保函开具方</label><select v-model="form.guarantee_issuer" :class="inputCls"><option value="">未设置</option><option v-for="g in guaranteeIssuers" :key="g" :value="g">{{ g }}</option></select></div>
@@ -248,7 +248,7 @@ const labelCls = 'block text-xs text-muted mb-1.5'
           <div><label :class="labelCls">垫资能力</label><input v-model="form.financing_capacity" :class="inputCls" /></div>
           <div class="col-span-2"><label :class="labelCls">兜底条款备注</label><textarea v-model="form.guarantee_notes" :class="inputCls" rows="2"></textarea></div>
 
-          <div class="col-span-2 text-xs font-bold text-primary pt-2">合作评价(内部)</div>
+          <div class="col-span-2 text-[13px] font-bold text-primary pt-2">合作评价(内部)</div>
           <div><label :class="labelCls">合作状态</label><select v-model="form.coop_status" :class="inputCls"><option v-for="c in coopStatuses" :key="c" :value="c">{{ c }}</option></select></div>
           <div><label :class="labelCls">内部信用评级</label><input v-model="form.credit_rating" :class="inputCls" placeholder="如 A/B/C" /></div>
           <div><label :class="labelCls">历史成交次数</label><input v-model="form.deal_count" type="number" :class="inputCls" /></div>
@@ -256,9 +256,9 @@ const labelCls = 'block text-xs text-muted mb-1.5'
           <div class="col-span-2"><label :class="labelCls">风险备注</label><textarea v-model="form.risk_notes" :class="inputCls" rows="2"></textarea></div>
         </div>
         <div class="px-6 py-4 border-t border-line flex items-center justify-end gap-2 sticky bottom-0 bg-white rounded-b-xl">
-          <p v-if="formError" class="text-xs text-red-500 mr-auto">{{ formError }}</p>
-          <button class="px-4 py-2 rounded-lg text-xs border border-line text-muted hover:bg-slate-50 transition" @click="dialog.show = false">取消</button>
-          <button class="px-4 py-2 rounded-lg text-xs bg-primary text-white transition" @click="submit">保存</button>
+          <p v-if="formError" class="text-[13px] text-red-500 mr-auto">{{ formError }}</p>
+          <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition" @click="dialog.show = false">取消</button>
+          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white transition" @click="submit">保存</button>
         </div>
       </div>
     </div>

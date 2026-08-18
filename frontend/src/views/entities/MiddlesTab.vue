@@ -86,8 +86,8 @@ async function remove(m: Middle) {
 }
 
 const detail = ref<Middle | null>(null)
-const inputCls = 'w-full border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
-const labelCls = 'block text-xs text-muted mb-1.5'
+const inputCls = 'w-full border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
+const labelCls = 'block text-[13px] text-muted mb-1.5'
 function fmt(t: string | null) {
   return t ? t.replace('T', ' ').slice(0, 16) : '—'
 }
@@ -98,45 +98,45 @@ function fmt(t: string | null) {
     <div class="bg-white rounded-xl border border-line">
       <div class="flex items-center gap-3 p-4 border-b border-line">
         <input v-model="keyword" :class="inputCls + ' w-56'" placeholder="搜索主体名称" @keyup.enter="load" />
-        <button class="px-4 py-2 rounded-lg text-xs border border-line text-muted hover:bg-slate-50 transition" @click="load">搜索</button>
-        <button class="ml-auto px-4 py-2 rounded-lg text-xs bg-primary text-white transition" @click="openCreate">+ 新增中间层</button>
+        <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition" @click="load">搜索</button>
+        <button class="ml-auto px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white transition whitespace-nowrap shrink-0" @click="openCreate">+ 新增中间层</button>
       </div>
-      <table class="w-full text-[13px]">
+      <table class="w-full text-sm">
         <thead>
-          <tr class="text-left text-muted text-xs border-b border-line">
-            <th class="px-4 py-3 font-medium">主体名称</th>
-            <th class="px-4 py-3 font-medium">企业性质</th>
-            <th class="px-4 py-3 font-medium">层级</th>
-            <th class="px-4 py-3 font-medium">目的(可多选)</th>
-            <th class="px-4 py-3 font-medium">费率</th>
-            <th class="px-4 py-3 font-medium">合作状态</th>
-            <th class="px-4 py-3 font-medium">更新</th>
-            <th class="px-4 py-3 font-medium text-right">操作</th>
+          <tr class="text-left text-muted text-[13px] border-b border-line">
+            <th class="px-5 py-3.5 font-medium">主体名称</th>
+            <th class="px-5 py-3.5 font-medium">企业性质</th>
+            <th class="px-5 py-3.5 font-medium">层级</th>
+            <th class="px-5 py-3.5 font-medium">目的(可多选)</th>
+            <th class="px-5 py-3.5 font-medium">费率</th>
+            <th class="px-5 py-3.5 font-medium">合作状态</th>
+            <th class="px-5 py-3.5 font-medium">更新</th>
+            <th class="px-5 py-3.5 font-medium text-right">操作</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading"><td colspan="8" class="px-4 py-8 text-center text-muted">加载中…</td></tr>
           <tr v-else-if="!rows.length"><td colspan="8" class="px-4 py-8 text-center text-muted">暂无中间层,点击右上角新增</td></tr>
           <tr v-for="m in rows" :key="m.id" class="border-b border-line hover:bg-slate-50/60 transition">
-            <td class="px-4 py-3">
+            <td class="px-5 py-3.5">
               <div class="font-medium">{{ m.name }}</div>
-              <div v-if="m.credit_code" class="text-[11px] text-muted">{{ m.credit_code }}</div>
+              <div v-if="m.credit_code" class="text-xs text-muted">{{ m.credit_code }}</div>
             </td>
-            <td class="px-4 py-3">
-              <span v-if="m.entity_nature" class="text-[11px] px-2 py-0.5 rounded" :class="m.entity_nature === '国资' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-600'">{{ m.entity_nature }}</span>
+            <td class="px-5 py-3.5">
+              <span v-if="m.entity_nature" class="text-xs px-2 py-0.5 rounded" :class="m.entity_nature === '国资' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-600'">{{ m.entity_nature }}</span>
               <span v-else class="text-muted">—</span>
             </td>
-            <td class="px-4 py-3 text-muted">第 {{ m.layer_no }} 层</td>
-            <td class="px-4 py-3 text-muted text-xs">{{ (m.purposes || []).join('、') || '—' }}</td>
-            <td class="px-4 py-3 text-muted">{{ m.fee_rate || '—' }}</td>
-            <td class="px-4 py-3">
-              <span class="text-[11px] px-2 py-0.5 rounded" :class="m.coop_status === '合作中' ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-600'">{{ m.coop_status }}</span>
+            <td class="px-5 py-3.5 text-muted">第 {{ m.layer_no }} 层</td>
+            <td class="px-5 py-3.5 text-muted text-[13px]">{{ (m.purposes || []).join('、') || '—' }}</td>
+            <td class="px-5 py-3.5 text-muted">{{ m.fee_rate || '—' }}</td>
+            <td class="px-5 py-3.5">
+              <span class="text-xs px-2 py-0.5 rounded" :class="m.coop_status === '合作中' ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-600'">{{ m.coop_status }}</span>
             </td>
-            <td class="px-4 py-3 text-muted text-xs">{{ fmt(m.updated_at) }}</td>
-            <td class="px-4 py-3 text-right whitespace-nowrap">
-              <button class="text-xs text-primary hover:underline mr-3" @click="detail = m">详情</button>
-              <button class="text-xs text-primary hover:underline mr-3" @click="openEdit(m)">编辑</button>
-              <button class="text-xs text-red-500 hover:underline" @click="remove(m)">删除</button>
+            <td class="px-5 py-3.5 text-muted text-[13px]">{{ fmt(m.updated_at) }}</td>
+            <td class="px-5 py-3.5 text-right whitespace-nowrap">
+              <button class="text-[13px] text-primary hover:underline mr-3" @click="detail = m">详情</button>
+              <button class="text-[13px] text-primary hover:underline mr-3" @click="openEdit(m)">编辑</button>
+              <button class="text-[13px] text-red-500 hover:underline" @click="remove(m)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -159,7 +159,7 @@ function fmt(t: string | null) {
           <div class="col-span-2">
             <label :class="labelCls">中间层目的(可多选,因交易模式不同会动态出现)</label>
             <div class="flex gap-2 flex-wrap">
-              <button v-for="p in purposeOptions" :key="p" type="button" class="px-3 py-1.5 rounded-lg text-xs border transition" :class="((form.purposes as string[]) || []).includes(p) ? 'border-primary bg-blue-50 text-primary' : 'border-line text-muted hover:border-slate-400'" @click="togglePurpose(p)">{{ p }}</button>
+              <button v-for="p in purposeOptions" :key="p" type="button" class="px-3 py-1.5 rounded-lg text-[13px] border transition" :class="((form.purposes as string[]) || []).includes(p) ? 'border-primary bg-blue-50 text-primary' : 'border-line text-muted hover:border-slate-400'" @click="togglePurpose(p)">{{ p }}</button>
             </div>
           </div>
           <div><label :class="labelCls">费率/分成比例</label><input v-model="form.fee_rate" :class="inputCls" /></div>
@@ -170,9 +170,9 @@ function fmt(t: string | null) {
           <div class="col-span-2"><label :class="labelCls">备注</label><textarea v-model="form.remark" :class="inputCls" rows="2"></textarea></div>
         </div>
         <div class="px-6 py-4 border-t border-line flex items-center justify-end gap-2 sticky bottom-0 bg-white rounded-b-xl">
-          <p v-if="formError" class="text-xs text-red-500 mr-auto">{{ formError }}</p>
-          <button class="px-4 py-2 rounded-lg text-xs border border-line text-muted" @click="dialog.show = false">取消</button>
-          <button class="px-4 py-2 rounded-lg text-xs bg-primary text-white" @click="submit">保存</button>
+          <p v-if="formError" class="text-[13px] text-red-500 mr-auto">{{ formError }}</p>
+          <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted" @click="dialog.show = false">取消</button>
+          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="submit">保存</button>
         </div>
       </div>
     </div>

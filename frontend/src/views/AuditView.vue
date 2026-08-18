@@ -53,14 +53,14 @@ function jsonText(v: Record<string, unknown> | null) {
       <div class="flex items-center gap-3 p-4 border-b border-line">
         <div class="flex gap-1 bg-slate-100 rounded-lg p-1">
           <button
-            class="px-4 py-1.5 rounded-md text-xs transition"
+            class="px-4 py-1.5 rounded-md text-[13px] transition"
             :class="tab === 'audit' ? 'bg-white shadow text-navy font-medium' : 'text-muted'"
             @click="tab = 'audit'; expanded = null; load()"
           >
             操作日志
           </button>
           <button
-            class="px-4 py-1.5 rounded-md text-xs transition"
+            class="px-4 py-1.5 rounded-md text-[13px] transition"
             :class="tab === 'login' ? 'bg-white shadow text-navy font-medium' : 'text-muted'"
             @click="tab = 'login'; load()"
           >
@@ -70,13 +70,13 @@ function jsonText(v: Record<string, unknown> | null) {
         <template v-if="tab === 'audit'">
           <input
             v-model="keyword"
-            class="w-52 border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            class="w-52 border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             placeholder="搜索操作人/对象/详情"
             @keyup.enter="load"
           />
           <select
             v-model="action"
-            class="border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary bg-white text-muted"
+            class="border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary bg-white text-muted"
             @change="load"
           >
             <option value="">全部动作</option>
@@ -86,26 +86,26 @@ function jsonText(v: Record<string, unknown> | null) {
             <option value="delete">删除</option>
           </select>
           <button
-            class="px-4 py-2 rounded-lg text-xs border border-line text-muted hover:bg-slate-50 transition"
+            class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition"
             @click="load"
           >
             搜索
           </button>
         </template>
-        <div class="ml-auto text-[11px] text-muted">日志只增不改,管理员亦不可删除</div>
+        <div class="ml-auto text-xs text-muted">日志只增不改,管理员亦不可删除</div>
       </div>
 
       <!-- 操作日志 -->
-      <table v-if="tab === 'audit'" class="w-full text-[13px]">
+      <table v-if="tab === 'audit'" class="w-full text-sm">
         <thead>
-          <tr class="text-left text-muted text-xs border-b border-line">
-            <th class="px-4 py-3 font-medium">时间</th>
-            <th class="px-4 py-3 font-medium">操作人</th>
-            <th class="px-4 py-3 font-medium">动作</th>
-            <th class="px-4 py-3 font-medium">对象</th>
-            <th class="px-4 py-3 font-medium">详情</th>
-            <th class="px-4 py-3 font-medium">IP</th>
-            <th class="px-4 py-3 font-medium"></th>
+          <tr class="text-left text-muted text-[13px] border-b border-line">
+            <th class="px-5 py-3.5 font-medium">时间</th>
+            <th class="px-5 py-3.5 font-medium">操作人</th>
+            <th class="px-5 py-3.5 font-medium">动作</th>
+            <th class="px-5 py-3.5 font-medium">对象</th>
+            <th class="px-5 py-3.5 font-medium">详情</th>
+            <th class="px-5 py-3.5 font-medium">IP</th>
+            <th class="px-5 py-3.5 font-medium"></th>
           </tr>
         </thead>
         <tbody>
@@ -117,24 +117,24 @@ function jsonText(v: Record<string, unknown> | null) {
           </tr>
           <template v-for="log in auditLogs" :key="log.id">
             <tr class="border-b border-line hover:bg-slate-50/60 transition">
-              <td class="px-4 py-2.5 text-muted whitespace-nowrap">{{ fmtTime(log.created_at) }}</td>
-              <td class="px-4 py-2.5 font-medium">{{ log.username || '—' }}</td>
-              <td class="px-4 py-2.5">
+              <td class="px-5 py-3 text-muted whitespace-nowrap">{{ fmtTime(log.created_at) }}</td>
+              <td class="px-5 py-3 font-medium">{{ log.username || '—' }}</td>
+              <td class="px-5 py-3">
                 <span
-                  class="text-[11px] px-2 py-0.5 rounded"
+                  class="text-xs px-2 py-0.5 rounded"
                   :class="actionMeta[log.action]?.cls || 'bg-slate-100 text-slate-600'"
                   >{{ actionMeta[log.action]?.label || log.action }}</span
                 >
               </td>
-              <td class="px-4 py-2.5 text-muted">
+              <td class="px-5 py-3 text-muted">
                 {{ log.entity_type ? `${log.entity_type}#${log.entity_id}` : '—' }}
               </td>
-              <td class="px-4 py-2.5">{{ log.detail || '—' }}</td>
-              <td class="px-4 py-2.5 text-muted">{{ log.ip }}</td>
-              <td class="px-4 py-2.5 text-right">
+              <td class="px-5 py-3">{{ log.detail || '—' }}</td>
+              <td class="px-5 py-3 text-muted">{{ log.ip }}</td>
+              <td class="px-5 py-3 text-right">
                 <button
                   v-if="log.old_value || log.new_value"
-                  class="text-xs text-primary hover:underline"
+                  class="text-[13px] text-primary hover:underline"
                   @click="expanded = expanded === log.id ? null : log.id"
                 >
                   {{ expanded === log.id ? '收起差异' : '查看差异' }}
@@ -145,12 +145,12 @@ function jsonText(v: Record<string, unknown> | null) {
               <td colspan="7" class="px-6 py-4">
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <div class="text-[11px] text-muted mb-1.5">改前值</div>
-                    <pre class="text-xs bg-white border border-line rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{{ jsonText(log.old_value) }}</pre>
+                    <div class="text-xs text-muted mb-1.5">改前值</div>
+                    <pre class="text-[13px] bg-white border border-line rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{{ jsonText(log.old_value) }}</pre>
                   </div>
                   <div>
-                    <div class="text-[11px] text-muted mb-1.5">改后值</div>
-                    <pre class="text-xs bg-white border border-line rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{{ jsonText(log.new_value) }}</pre>
+                    <div class="text-xs text-muted mb-1.5">改后值</div>
+                    <pre class="text-[13px] bg-white border border-line rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{{ jsonText(log.new_value) }}</pre>
                   </div>
                 </div>
               </td>
@@ -160,14 +160,14 @@ function jsonText(v: Record<string, unknown> | null) {
       </table>
 
       <!-- 登录日志 -->
-      <table v-else class="w-full text-[13px]">
+      <table v-else class="w-full text-sm">
         <thead>
-          <tr class="text-left text-muted text-xs border-b border-line">
-            <th class="px-4 py-3 font-medium">时间</th>
-            <th class="px-4 py-3 font-medium">账号</th>
-            <th class="px-4 py-3 font-medium">结果</th>
-            <th class="px-4 py-3 font-medium">详情</th>
-            <th class="px-4 py-3 font-medium">IP</th>
+          <tr class="text-left text-muted text-[13px] border-b border-line">
+            <th class="px-5 py-3.5 font-medium">时间</th>
+            <th class="px-5 py-3.5 font-medium">账号</th>
+            <th class="px-5 py-3.5 font-medium">结果</th>
+            <th class="px-5 py-3.5 font-medium">详情</th>
+            <th class="px-5 py-3.5 font-medium">IP</th>
           </tr>
         </thead>
         <tbody>
@@ -178,11 +178,11 @@ function jsonText(v: Record<string, unknown> | null) {
             <td colspan="5" class="px-4 py-8 text-center text-muted">暂无日志</td>
           </tr>
           <tr v-for="log in loginLogs" :key="log.id" class="border-b border-line hover:bg-slate-50/60 transition">
-            <td class="px-4 py-2.5 text-muted whitespace-nowrap">{{ fmtTime(log.created_at) }}</td>
-            <td class="px-4 py-2.5 font-medium">{{ log.username }}</td>
-            <td class="px-4 py-2.5">
+            <td class="px-5 py-3 text-muted whitespace-nowrap">{{ fmtTime(log.created_at) }}</td>
+            <td class="px-5 py-3 font-medium">{{ log.username }}</td>
+            <td class="px-5 py-3">
               <span
-                class="text-[11px] px-2 py-0.5 rounded"
+                class="text-xs px-2 py-0.5 rounded"
                 :class="
                   log.result === 'success'
                     ? 'bg-green-50 text-green-600'
@@ -193,8 +193,8 @@ function jsonText(v: Record<string, unknown> | null) {
                 >{{ log.result === 'success' ? '成功' : log.result === 'lockout' ? '锁定' : '失败' }}</span
               >
             </td>
-            <td class="px-4 py-2.5 text-muted">{{ log.detail || '—' }}</td>
-            <td class="px-4 py-2.5 text-muted">{{ log.ip }}</td>
+            <td class="px-5 py-3 text-muted">{{ log.detail || '—' }}</td>
+            <td class="px-5 py-3 text-muted">{{ log.ip }}</td>
           </tr>
         </tbody>
       </table>

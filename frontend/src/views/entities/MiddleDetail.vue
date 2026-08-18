@@ -44,8 +44,8 @@ async function saveComm() {
   }
 }
 
-const inputCls = 'w-full border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
-const labelCls = 'block text-xs text-muted mb-1.5'
+const inputCls = 'w-full border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20'
+const labelCls = 'block text-[13px] text-muted mb-1.5'
 const itemCls = 'bg-slate-50 rounded-lg px-3 py-2'
 function fmt(t: string | null) {
   return t ? t.replace('T', ' ').slice(0, 16) : '—'
@@ -84,43 +84,43 @@ const groups: { title: string; items: [string, unknown][] }[] = [
     <div class="px-6 py-4 border-b border-line flex items-center shrink-0">
       <div>
         <div class="text-sm font-bold">{{ middle.name }}</div>
-        <div class="text-[11px] text-muted">最后维护:{{ userNames[middle.last_editor_id!] || '—' }} · {{ fmt(middle.updated_at) }} · 版本 v{{ middle.version }}</div>
+        <div class="text-xs text-muted">最后维护:{{ userNames[middle.last_editor_id!] || '—' }} · {{ fmt(middle.updated_at) }} · 版本 v{{ middle.version }}</div>
       </div>
       <button class="ml-auto text-xl text-muted hover:text-navy" @click="emit('close')">×</button>
     </div>
     <div class="flex-1 overflow-y-auto p-6">
       <div v-for="g in groups" :key="g.title" class="mb-5">
-        <div class="text-xs font-bold text-primary mb-2">{{ g.title }}</div>
+        <div class="text-[13px] font-bold text-primary mb-2">{{ g.title }}</div>
         <div class="grid grid-cols-2 gap-2">
           <div v-for="[k, v] in g.items" :key="k" :class="itemCls">
-            <div class="text-[10px] text-muted">{{ k }}</div>
-            <div class="text-[12.5px] mt-0.5 break-all">{{ v }}</div>
+            <div class="text-xs text-muted">{{ k }}</div>
+            <div class="text-sm mt-0.5 break-all">{{ v }}</div>
           </div>
         </div>
       </div>
 
       <div class="flex items-center justify-between mt-6 mb-2">
-        <div class="text-xs font-bold text-primary">沟通记录(中间层会变化,留痕尤为重要)</div>
-        <button class="px-3 py-1.5 rounded-lg text-xs bg-primary text-white" @click="commDlg.show = true">+ 记录沟通</button>
+        <div class="text-[13px] font-bold text-primary">沟通记录(中间层会变化,留痕尤为重要)</div>
+        <button class="px-3 py-1.5 rounded-lg text-[13px] bg-primary text-white" @click="commDlg.show = true">+ 记录沟通</button>
       </div>
       <div class="border-l-2 border-line pl-4 space-y-3">
-        <div v-if="!comms.length" class="text-xs text-muted py-2">暂无沟通记录</div>
+        <div v-if="!comms.length" class="text-[13px] text-muted py-2">暂无沟通记录</div>
         <div v-for="c in comms" :key="c.id" class="bg-white border border-line rounded-lg p-3">
-          <div class="flex items-center gap-2 text-[11px] text-muted mb-1">
+          <div class="flex items-center gap-2 text-xs text-muted mb-1">
             <span class="px-1.5 py-0.5 rounded bg-slate-100">{{ c.channel || '—' }}</span>
             <span>{{ fmt(c.comm_time) }}</span>
             <span>·</span>
             <span>{{ c.created_by_name }}</span>
           </div>
-          <div class="text-xs whitespace-pre-wrap">{{ c.content }}</div>
-          <div v-if="c.next_step" class="text-[11px] text-primary mt-1">下一步:{{ c.next_step }}</div>
+          <div class="text-[13px] whitespace-pre-wrap">{{ c.content }}</div>
+          <div v-if="c.next_step" class="text-xs text-primary mt-1">下一步:{{ c.next_step }}</div>
         </div>
       </div>
     </div>
 
     <div v-if="commDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]" @click.self="commDlg.show = false">
       <div class="bg-white rounded-xl w-[460px] p-6 shadow-2xl">
-        <div class="text-sm font-bold mb-4">记录沟通</div>
+        <div class="text-base font-bold mb-4">记录沟通</div>
         <div class="grid grid-cols-2 gap-3">
           <div><label :class="labelCls">沟通时间</label><input v-model="commForm.comm_time" type="datetime-local" :class="inputCls" /></div>
           <div><label :class="labelCls">沟通方式</label><select v-model="commForm.channel" :class="inputCls"><option v-for="c in ['电话', '微信', '面谈', '会议', '其他']" :key="c" :value="c">{{ c }}</option></select></div>
@@ -129,10 +129,10 @@ const groups: { title: string; items: [string, unknown][] }[] = [
           <div class="col-span-2"><label :class="labelCls">下一步计划</label><input v-model="commForm.next_step" :class="inputCls" /></div>
           <div class="col-span-2"><label :class="labelCls">跟进时间</label><input v-model="commForm.follow_up_at" type="datetime-local" :class="inputCls" /></div>
         </div>
-        <p v-if="commErr" class="text-xs text-red-500 mt-3">{{ commErr }}</p>
+        <p v-if="commErr" class="text-[13px] text-red-500 mt-3">{{ commErr }}</p>
         <div class="flex justify-end gap-2 mt-5">
-          <button class="px-4 py-2 rounded-lg text-xs border border-line text-muted" @click="commDlg.show = false">取消</button>
-          <button class="px-4 py-2 rounded-lg text-xs bg-primary text-white" @click="saveComm">保存</button>
+          <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted" @click="commDlg.show = false">取消</button>
+          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="saveComm">保存</button>
         </div>
       </div>
     </div>

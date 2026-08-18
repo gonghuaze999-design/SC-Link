@@ -81,26 +81,26 @@ function logout() {
 
 <template>
   <div class="flex h-screen">
-    <aside class="w-56 bg-navy flex flex-col shrink-0">
-      <div class="flex items-center gap-2.5 px-5 h-16 border-b border-white/10 shrink-0">
+    <aside class="w-60 bg-navy flex flex-col shrink-0">
+      <div class="flex items-center gap-3 px-6 h-[72px] border-b border-white/10 shrink-0">
         <div
-          class="w-7 h-7 rounded-lg shrink-0"
+          class="w-9 h-9 rounded-xl shrink-0"
           style="background: linear-gradient(135deg, #2563eb, #06b6d4)"
         ></div>
         <div>
-          <div class="text-white text-sm font-bold leading-4">SC-Link</div>
-          <div class="text-[10px] text-slate-400 leading-3 mt-0.5">供应链协同中台</div>
+          <div class="text-white text-[15px] font-bold leading-5">SC-Link</div>
+          <div class="text-xs text-slate-400 leading-3 mt-0.5">供应链协同中台</div>
         </div>
       </div>
-      <nav class="flex-1 overflow-y-auto py-4">
-        <div v-for="g in navGroups" :key="g.label" class="mb-5">
-          <div class="px-5 text-[10px] text-slate-500 mb-2 tracking-widest">{{ g.label }}</div>
+      <nav class="flex-1 overflow-y-auto py-5">
+        <div v-for="g in navGroups" :key="g.label" class="mb-6">
+          <div class="px-6 text-xs text-slate-500 mb-2.5 tracking-widest">{{ g.label }}</div>
           <router-link
             v-for="it in g.items"
             :key="it.key"
             :to="it.path || '#'"
             :class="[
-              'flex items-center gap-2.5 mx-2 px-3 py-2 rounded-lg text-[13px] transition',
+              'flex items-center gap-3 mx-2.5 px-3.5 py-2.5 rounded-lg text-sm transition',
               route.path === it.path
                 ? 'bg-blue-900 text-white'
                 : 'text-slate-400 hover:text-white hover:bg-white/5',
@@ -115,7 +115,7 @@ function logout() {
             {{ it.title }}
             <span
               v-if="it.soon"
-              class="ml-auto text-[9px] bg-white/10 rounded px-1.5 py-0.5"
+              class="ml-auto text-[10px] bg-white/10 rounded px-1.5 py-0.5"
               >即将上线</span
             >
           </router-link>
@@ -124,24 +124,24 @@ function logout() {
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
-      <header class="h-16 bg-white border-b border-line flex items-center justify-between px-6 shrink-0">
-        <div class="text-[15px] font-semibold">{{ pageTitle }}</div>
-        <div class="flex items-center gap-3">
+      <header class="h-[72px] bg-white border-b border-line flex items-center justify-between px-8 shrink-0">
+        <div class="text-lg font-semibold">{{ pageTitle }}</div>
+        <div class="flex items-center gap-4">
           <span
-            class="text-xs px-2 py-0.5 rounded"
+            class="text-[13px] px-2.5 py-0.5 rounded"
             :class="auth.isAdmin ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'"
             >{{ auth.isAdmin ? '管理员' : '一般用户' }}</span
           >
-          <span class="text-sm font-medium">{{ auth.user?.display_name || auth.user?.username }}</span>
-          <button class="text-xs text-muted hover:text-primary transition" @click="showPwd = true">
+          <span class="text-[15px] font-medium">{{ auth.user?.display_name || auth.user?.username }}</span>
+          <button class="text-[13px] text-muted hover:text-primary transition" @click="showPwd = true">
             修改密码
           </button>
-          <button class="text-xs text-muted hover:text-red-500 transition" @click="logout">
+          <button class="text-[13px] text-muted hover:text-red-500 transition" @click="logout">
             退出登录
           </button>
         </div>
       </header>
-      <main class="flex-1 overflow-y-auto p-6">
+      <main class="flex-1 overflow-y-auto p-8">
         <router-view />
       </main>
     </div>
@@ -152,42 +152,42 @@ function logout() {
       @click.self="showPwd = false"
     >
       <div class="bg-white rounded-xl w-[360px] p-6 shadow-2xl">
-        <div class="text-sm font-bold mb-4">修改密码</div>
+        <div class="text-base font-bold mb-4">修改密码</div>
         <div class="mb-3">
-          <label class="block text-xs text-muted mb-1.5">原密码</label>
+          <label class="block text-[13px] text-muted mb-1.5">原密码</label>
           <input
             v-model="pwdForm.old_password"
             type="password"
-            class="w-full border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            class="w-full border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <div class="mb-3">
-          <label class="block text-xs text-muted mb-1.5">新密码(至少 8 位)</label>
+          <label class="block text-[13px] text-muted mb-1.5">新密码(至少 8 位)</label>
           <input
             v-model="pwdForm.new_password"
             type="password"
-            class="w-full border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            class="w-full border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <div class="mb-4">
-          <label class="block text-xs text-muted mb-1.5">确认新密码</label>
+          <label class="block text-[13px] text-muted mb-1.5">确认新密码</label>
           <input
             v-model="pwdForm.confirm"
             type="password"
-            class="w-full border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            class="w-full border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </div>
-        <p v-if="pwdError" class="text-xs text-red-500 mb-3">{{ pwdError }}</p>
+        <p v-if="pwdError" class="text-[13px] text-red-500 mb-3">{{ pwdError }}</p>
         <div class="flex justify-end gap-2">
           <button
-            class="px-4 py-2 rounded-lg text-xs border border-line text-muted hover:bg-slate-50 transition"
+            class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition"
             @click="showPwd = false"
           >
             取消
           </button>
           <button
             :disabled="pwdLoading"
-            class="px-4 py-2 rounded-lg text-xs bg-primary disabled:opacity-60 text-white transition"
+            class="px-5 py-2.5 rounded-lg text-[13px] bg-primary disabled:opacity-60 text-white transition"
             @click="submitPwd"
           >
             确认修改

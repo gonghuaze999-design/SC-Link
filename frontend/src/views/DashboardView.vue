@@ -13,19 +13,19 @@ const kpis = [
 
 <template>
   <div>
-    <div class="bg-white rounded-xl border border-line p-6 mb-5">
-      <h2 class="text-base font-bold">你好,{{ auth.user?.display_name || auth.user?.username }}</h2>
-      <p class="text-xs text-muted mt-1">
+    <div class="bg-white rounded-xl border border-line p-8 mb-6">
+      <h2 class="text-xl font-bold">你好,{{ auth.user?.display_name || auth.user?.username }}</h2>
+      <p class="text-[13px] text-muted mt-2">
         阶段一开发中:用户体系、登录锁定与审计日志已可用;主体管理、数据共享、供需看板等模块将陆续上线。
       </p>
     </div>
-    <div class="grid grid-cols-4 gap-4">
-      <div v-for="k in kpis" :key="k.label" class="bg-white rounded-xl border border-line p-5">
-        <div class="text-xs text-muted">{{ k.label }}</div>
-        <div class="text-2xl font-bold mt-2" style="font-variant-numeric: tabular-nums">
+    <div class="grid grid-cols-4 gap-5">
+      <div v-for="k in kpis" :key="k.label" class="bg-white rounded-xl border border-line p-6">
+        <div class="text-[13px] text-muted">{{ k.label }}</div>
+        <div class="text-3xl font-bold mt-3" style="font-variant-numeric: tabular-nums">
           {{ k.value }}
         </div>
-        <div class="text-[10px] text-muted mt-1">{{ k.hint }}</div>
+        <div class="text-xs text-muted mt-1.5">{{ k.hint }}</div>
       </div>
     </div>
   </div>

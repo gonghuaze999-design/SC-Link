@@ -16,11 +16,11 @@ const active = ref('suppliers')
 
 <template>
   <div>
-    <div class="flex gap-1 bg-white rounded-xl border border-line p-1 w-fit mb-5">
+    <div class="flex gap-1 bg-white rounded-xl border border-line p-1.5 w-fit mb-6">
       <button
         v-for="t in tabs"
         :key="t.key"
-        class="px-5 py-2 rounded-lg text-[13px] transition"
+        class="px-6 py-2.5 rounded-lg text-sm transition whitespace-nowrap"
         :class="active === t.key ? 'bg-primary text-white shadow' : 'text-muted hover:text-navy'"
         @click="active = t.key"
       >
