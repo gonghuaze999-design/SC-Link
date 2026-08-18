@@ -310,3 +310,60 @@ class MatchResult(Base):
     reasons: Mapped[list | None] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="new")  # new/viewed/accepted/ignored
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_no: Mapped[str] = mapped_column(String(64), index=True)
+    product_line_id: Mapped[int | None] = mapped_column(ForeignKey("product_lines.id"), nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer, default=0)
+    unit_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    total_amount: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)
+    currency: Mapped[str] = mapped_column(String(8), default="CNY")
+    supplier_id: Mapped[int | None] = mapped_column(ForeignKey("suppliers.id"), nullable=True)
+    customer_id: Mapped[int | None] = mapped_column(ForeignKey("customers.id"), nullable=True)
+    middle_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    payment_mode: Mapped[str] = mapped_column(String(32), default="")
+    contract_no: Mapped[str] = mapped_column(String(128), default="")
+    contract_file: Mapped[str] = mapped_column(String(256), default="")
+    status: Mapped[str] = mapped_column(String(32), default="registered", index=True)
+    pre_breach_status: Mapped[str] = mapped_column(String(32), default="")
+    signed_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    owner_id: Mapped[int] = mapped_column(Integer, index=True)
+    last_editor_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class OrderTrack(Base):
+    """订单跟踪事件:只增不改"""
+
+    __tablename__ = "order_tracks"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), index=True)
+    category: Mapped[str] = mapped_column(String(16), default="其他")  # 货源/资金/到货/交付/违约/其他
+    title: Mapped[str] = mapped_column(String(128), default="")
+    content: Mapped[str] = mapped_column(Text, default="")
+    attachment: Mapped[str] = mapped_column(String(256), default="")
+    created_by: Mapped[int] = mapped_column(Integer, default=0)
+    created_by_name: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Breach(Base):
+    """违约事项独立跟踪"""
+
+    __tablename__ = "breaches"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), index=True)
+    breach_party: Mapped[str] = mapped_column(String(32), default="")  # 上游/下游/中间层/其他
+    breach_content: Mapped[str] = mapped_column(Text, default="")
+    solution: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(16), default="处理中")  # 处理中/已解决/已关闭
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

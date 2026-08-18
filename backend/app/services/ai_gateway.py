@@ -168,3 +168,39 @@ def _extract_frames(video: Path, count: int = 3) -> list[Path]:
         return frames
     except Exception:
         return frames
+
+
+def order_summary(order_info: dict, tracks: list[dict]) -> str | None:
+    """跟单 AI:订单智能摘要"""
+    prompt = (
+        "你是供应链订单跟进助手。根据订单信息和跟踪事件时间线,用一段话概括订单当前状态"
+        "(进度、资金、风险、下一步建议),150 字以内,中文,直接输出正文不要标题。\n\n"
+        f"订单信息:{json.dumps(order_info, ensure_ascii=False, default=str)}\n"
+        f"跟踪事件:{json.dumps(tracks, ensure_ascii=False, default=str)}"
+    )
+    return _call([{"text": prompt}])
+
+
+def extract_track_events(text: str) -> list[dict] | None:
+    """跟单 AI:沟通内容 → 跟踪事件草稿"""
+    prompt = (
+        "你是供应链订单跟进助手。从下面的沟通记录中提取关键跟踪事件。只输出 JSON 数组,不要其他文字。"
+        '每个事件字段:category(分类:货源/资金/到货/交付/违约/其他)、title(简短标题)、'
+        'content(事件内容)、next_action(建议的下一步,无则空串)。最多 5 条,按时间顺序。\n\n沟通记录:\n' + text
+    )
+    out = _call([{"text": prompt}])
+    if not out:
+        return None
+    try:
+        cleaned = out.strip().strip("`").removeprefix("json").strip()
+        data = json.loads(cleaned)
+        return data if isinstance(data, list) else None
+    except Exception:
+        start, end = out.find("["), out.rfind("]")
+        if start >= 0 and end > start:
+            try:
+                data = json.loads(out[start : end + 1])
+                return data if isinstance(data, list) else None
+            except Exception:
+                return None
+    return None

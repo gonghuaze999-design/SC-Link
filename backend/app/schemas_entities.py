@@ -510,3 +510,117 @@ class MatchItem(BaseModel):
 # ---------- AI ----------
 class ParseRequest(BaseModel):
     text: str = Field(min_length=5, max_length=2000)
+
+
+# ---------- 订单 ----------
+class OrderOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    order_no: str
+    product_line_id: int | None
+    quantity: int
+    unit_price: float | None
+    total_amount: float | None
+    currency: str
+    supplier_id: int | None
+    customer_id: int | None
+    middle_ids: list | None
+    payment_mode: str
+    contract_no: str
+    contract_file: str
+    status: str
+    pre_breach_status: str
+    signed_at: date | None
+    owner_id: int
+    last_editor_id: int | None
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class OrderIn(BaseModel):
+    order_no: str = Field(min_length=1, max_length=64)
+    product_line_id: int | None = None
+    quantity: int = Field(default=0, ge=0)
+    unit_price: float | None = None
+    total_amount: float | None = None
+    currency: str = "CNY"
+    supplier_id: int | None = None
+    customer_id: int | None = None
+    middle_ids: list | None = None
+    payment_mode: str = ""
+    contract_no: str = ""
+    contract_file: str = ""
+    signed_at: date | None = None
+
+
+class OrderUpdate(BaseModel):
+    order_no: str | None = None
+    quantity: int | None = None
+    unit_price: float | None = None
+    total_amount: float | None = None
+    currency: str | None = None
+    supplier_id: int | None = None
+    customer_id: int | None = None
+    middle_ids: list | None = None
+    payment_mode: str | None = None
+    contract_no: str | None = None
+    contract_file: str | None = None
+    signed_at: date | None = None
+    version: int
+
+
+class StatusChange(BaseModel):
+    status: str
+
+
+class TrackOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    order_id: int
+    category: str
+    title: str
+    content: str
+    attachment: str
+    created_by: int
+    created_by_name: str
+    created_at: datetime
+
+
+class TrackIn(BaseModel):
+    category: str = Field(default="其他", max_length=16)
+    title: str = Field(default="", max_length=128)
+    content: str = Field(min_length=1, max_length=5000)
+    attachment: str = ""
+
+
+class BreachOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    order_id: int
+    breach_party: str
+    breach_content: str
+    solution: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class BreachIn(BaseModel):
+    breach_party: str = Field(default="", max_length=32)
+    breach_content: str = Field(min_length=1, max_length=3000)
+    solution: str = ""
+
+
+class BreachUpdate(BaseModel):
+    breach_party: str | None = None
+    breach_content: str | None = None
+    solution: str | None = None
+    status: str | None = None
+
+
+class AiExtractRequest(BaseModel):
+    text: str = Field(min_length=5, max_length=8000)

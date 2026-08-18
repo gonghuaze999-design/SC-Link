@@ -7,7 +7,7 @@ from sqlalchemy import text
 from .config import settings
 from .database import Base, SessionLocal, engine
 from .models import User
-from .routers import audit, auth, customers, entities, files, match, publications, shares, users
+from .routers import audit, analytics, auth, customers, entities, files, match, orders, publications, shares, users
 from .security import hash_password
 import app.entities  # noqa: F401  注册业务实体模型
 
@@ -65,3 +65,5 @@ app.include_router(shares.router, prefix="/api")
 app.include_router(files.router, prefix="/api")
 app.include_router(publications.router, prefix="/api")
 app.include_router(match.router, prefix="/api")
+app.include_router(orders.router, prefix="/api")
+app.include_router(analytics.router, prefix="/api")
