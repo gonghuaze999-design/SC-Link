@@ -13,9 +13,9 @@ from pathlib import Path
 
 from ..config import settings
 
-GEMINI_URL = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model}:generateContent"
-)
+def _gemini_url() -> str:
+    base = (settings.gemini_api_base or "https://generativelanguage.googleapis.com").rstrip("/")
+    return f"{base}/v1beta/models/{settings.gemini_model}:generateContent"
 
 
 def ai_enabled() -> bool:
@@ -27,7 +27,7 @@ def _call(parts: list[dict]) -> str | None:
         return None
     body = json.dumps({"contents": [{"parts": parts}]}).encode("utf-8")
     req = urllib.request.Request(
-        GEMINI_URL + f"?key={settings.gemini_api_key}",
+        _gemini_url() + f"?key={settings.gemini_api_key}",
         data=body,
         headers={"Content-Type": "application/json"},
     )

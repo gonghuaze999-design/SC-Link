@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
+    gemini_api_base: str = ""  # 留空用 Google 官方端点;中转服务时填其基地址
 
 
 settings = Settings()
