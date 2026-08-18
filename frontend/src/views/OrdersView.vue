@@ -342,10 +342,10 @@ function cname(id: number | null) {
       <div class="fixed inset-y-0 right-0 w-[760px] max-w-[94vw] bg-white shadow-2xl z-50 flex flex-col">
         <div class="px-6 py-4 border-b border-line flex items-center shrink-0">
           <div>
-            <div class="text-base font-bold">{{ detail.order_no }}
-              <span class="text-xs px-2 py-0.5 rounded ml-2" :class="ORDER_STATUSES[detail.status]?.cls">{{ ORDER_STATUSES[detail.status]?.label }}</span>
+            <div class="text-base font-bold">{{ detail!.order_no }}
+              <span class="text-xs px-2 py-0.5 rounded ml-2" :class="ORDER_STATUSES[detail!.status]?.cls">{{ ORDER_STATUSES[detail!.status]?.label }}</span>
             </div>
-            <div class="text-xs text-muted mt-1">{{ products.find((p) => p.id === detail.product_line_id)?.name || '—' }} · {{ detail.quantity }} 台 · 总额 {{ detail.total_amount != null ? detail.total_amount.toLocaleString() : '—' }} {{ detail.currency }} · {{ sname(detail.supplier_id) }} → {{ cname(detail.customer_id) }}</div>
+            <div class="text-xs text-muted mt-1">{{ products.find((p) => p.id === detail!.product_line_id)?.name || '—' }} · {{ detail!.quantity }} 台 · 总额 {{ detail!.total_amount != null ? detail!.total_amount.toLocaleString() : '—' }} {{ detail!.currency }} · {{ sname(detail!.supplier_id) }} → {{ cname(detail!.customer_id) }}</div>
           </div>
           <button class="ml-auto text-2xl text-muted hover:text-navy" @click="detail = null">×</button>
         </div>
