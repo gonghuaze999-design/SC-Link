@@ -21,6 +21,7 @@ from ..schemas_entities import (
 )
 from ..services.ai_gateway import ai_enabled, extract_track_events, order_summary
 from ..services.audit import write_audit
+from ..services.locking import conditional_update
 from ..services.visibility import apply_visibility
 
 router = APIRouter(tags=["orders"])
@@ -102,16 +103,15 @@ def update_order(
     user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
     obj = _order_or_404(db, order_id, user)
-    if obj.version != body.version:
-        raise HTTPException(status_code=409, detail=f"数据已被他人更新(当前 v{obj.version}),请刷新后重试")
     changes = body.model_dump(exclude_unset=True)
     changes.pop("version", None)
     old = {f: getattr(obj, f) for f in ORDER_FIELDS}
-    for f, v in changes.items():
-        setattr(obj, f, v)
-    obj.version += 1
-    obj.last_editor_id = user.id
-    new = {f: getattr(obj, f) for f in ORDER_FIELDS}
+    ok = conditional_update(db, Order, obj.id, body.version, changes, user.id)
+    if not ok:
+        write_audit(db, request, user, "update_conflict", "order", str(obj.id), detail=f"版本冲突:基于 v{body.version} 更新被拒(当前 v{obj.version})")
+        db.commit()
+        raise HTTPException(status_code=409, detail=f"数据已被他人更新(当前版本 v{obj.version},你基于 v{body.version} 编辑),请刷新后重试")
+    new = {**old, **changes}
     write_audit(db, request, user, "update", "order", str(obj.id), old_value=old, new_value=new, detail=f"更新订单 {obj.order_no}")
     db.commit()
     db.refresh(obj)
@@ -140,12 +140,13 @@ def change_status(
     if target not in TRANSITIONS:
         raise HTTPException(status_code=400, detail="状态不合法")
     old_status = obj.status
+    old_version = obj.version
     allowed = TRANSITIONS.get(obj.status, set())
     detail_extra = ""
+    changes: dict = {}
     if obj.status == "breach_processing" and target == "breach_resolved":
         # 违约解决:自动回到进入违约前的环节
-        obj.status = obj.pre_breach_status or "sourcing"
-        obj.pre_breach_status = ""
+        changes = {"status": obj.pre_breach_status or "sourcing", "pre_breach_status": ""}
         detail_extra = "(违约解决)"
     elif target not in allowed:
         raise HTTPException(
@@ -154,11 +155,16 @@ def change_status(
         )
     else:
         if target == "breach":
-            obj.pre_breach_status = obj.status
-        obj.status = target
-    obj.version += 1
-    obj.last_editor_id = user.id
-    write_audit(db, request, user, "update", "order", str(obj.id), old_value={"status": old_status}, new_value={"status": obj.status}, detail=f"订单 {obj.order_no} 状态 → {STATUS_LABELS.get(obj.status, obj.status)}{detail_extra}")
+            changes = {"status": target, "pre_breach_status": obj.status}
+        else:
+            changes = {"status": target}
+    ok = conditional_update(db, Order, obj.id, old_version, changes, user.id)
+    if not ok:
+        write_audit(db, request, user, "update_conflict", "order", str(obj.id), detail=f"状态流转冲突:基于 v{old_version} 被拒")
+        db.commit()
+        raise HTTPException(status_code=409, detail=f"数据已被他人更新(当前版本 v{obj.version}),请刷新后重试")
+    new_status = changes.get("status")
+    write_audit(db, request, user, "update", "order", str(obj.id), old_value={"status": old_status}, new_value={"status": new_status}, detail=f"订单 {obj.order_no} 状态 → {STATUS_LABELS.get(new_status, new_status)}{detail_extra}")
     db.commit()
     db.refresh(obj)
     return obj

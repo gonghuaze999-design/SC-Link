@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import AppLogo from '../components/AppLogo.vue'
 import { errMsg } from '../api/http'
 
 const router = useRouter()
@@ -42,7 +43,7 @@ async function submit() {
 
     <div class="relative w-[460px] bg-white rounded-3xl shadow-2xl px-12 py-12">
       <div class="flex items-center gap-4 mb-10">
-        <div class="w-14 h-14 rounded-2xl shrink-0 shadow-lg shadow-blue-500/30" style="background: linear-gradient(135deg, #2563eb, #06b6d4)"></div>
+        <AppLogo :size="56" class="shrink-0 drop-shadow-lg" />
         <div>
           <div class="text-[24px] font-bold text-navy leading-7 tracking-wide">SC-Link</div>
           <div class="text-sm text-muted mt-1.5">供应链协同分析中台</div>

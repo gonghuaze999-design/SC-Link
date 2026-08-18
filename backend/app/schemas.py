@@ -56,6 +56,7 @@ class UserUpdate(BaseModel):
     phone: str | None = None
     email: str | None = None
     new_password: str | None = Field(default=None, min_length=8, max_length=64)
+    unlock: bool | None = None  # 管理员解锁账号(清除锁定与失败计数)
 
 
 class AuditLogOut(BaseModel):

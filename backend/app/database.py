@@ -8,7 +8,14 @@ DATABASE_URL = (
     f"@{settings.db_host}:{settings.db_port}/{settings.db_name}?charset=utf8mb4"
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=3600)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    pool_size=20,
+    max_overflow=60,
+    pool_timeout=10,
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

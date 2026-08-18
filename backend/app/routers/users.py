@@ -103,6 +103,11 @@ def update_user(
             user.password_hash = hash_password(new_pwd)
             write_audit(db, request, admin, "update", "user", str(user.id), detail="重置密码")
 
+    if changes.pop("unlock", None):
+        user.locked_until = None
+        user.failed_attempts = 0
+        write_audit(db, request, admin, "update", "user", str(user.id), detail="解锁账号")
+
     for field, value in changes.items():
         setattr(user, field, value)
 

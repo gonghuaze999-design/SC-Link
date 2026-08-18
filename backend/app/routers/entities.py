@@ -33,6 +33,7 @@ from ..schemas_entities import (
     SupplierUpdate,
 )
 from ..services.audit import write_audit
+from ..services.locking import conditional_update
 from ..services.visibility import apply_visibility, can_access_entity
 
 router = APIRouter(tags=["entities"])
@@ -114,15 +115,15 @@ def update_chain(
     db: Session = Depends(get_db),
 ):
     obj = _entity_or_404(db, OverseasChain, chain_id, user, "chain")
-    _check_version(obj, body.version)
     changes = body.model_dump(exclude_unset=True)
     changes.pop("version", None)
     old = _snapshot(obj, CHAIN_FIELDS)
-    for f, v in changes.items():
-        setattr(obj, f, v)
-    obj.version += 1
-    obj.last_editor_id = user.id
-    new = _snapshot(obj, CHAIN_FIELDS)
+    ok = conditional_update(db, OverseasChain, obj.id, body.version, changes, user.id)
+    if not ok:
+        write_audit(db, request, user, "update_conflict", "chain", str(obj.id), detail=f"版本冲突:基于 v{body.version} 更新被拒(当前 v{obj.version})")
+        db.commit()
+        raise HTTPException(status_code=409, detail=f"数据已被他人更新(当前版本 v{obj.version},你基于 v{body.version} 编辑),请刷新后重试")
+    new = {**old, **changes}
     write_audit(db, request, user, "update", "chain", str(obj.id), old_value=old, new_value=new, detail=f"更新链路方 {obj.name}")
     db.commit()
     db.refresh(obj)
@@ -198,15 +199,15 @@ def update_supplier(
     db: Session = Depends(get_db),
 ):
     obj = _entity_or_404(db, Supplier, supplier_id, user, "supplier")
-    _check_version(obj, body.version)
     changes = body.model_dump(exclude_unset=True)
     changes.pop("version", None)
     old = _snapshot(obj, SUPPLIER_FIELDS)
-    for f, v in changes.items():
-        setattr(obj, f, v)
-    obj.version += 1
-    obj.last_editor_id = user.id
-    new = _snapshot(obj, SUPPLIER_FIELDS)
+    ok = conditional_update(db, Supplier, obj.id, body.version, changes, user.id)
+    if not ok:
+        write_audit(db, request, user, "update_conflict", "supplier", str(obj.id), detail=f"版本冲突:基于 v{body.version} 更新被拒(当前 v{obj.version})")
+        db.commit()
+        raise HTTPException(status_code=409, detail=f"数据已被他人更新(当前版本 v{obj.version},你基于 v{body.version} 编辑),请刷新后重试")
+    new = {**old, **changes}
     write_audit(db, request, user, "update", "supplier", str(obj.id), old_value=old, new_value=new, detail=f"更新供货方 {obj.name}")
     db.commit()
     db.refresh(obj)
@@ -331,15 +332,15 @@ def update_middle(
     db: Session = Depends(get_db),
 ):
     obj = _entity_or_404(db, MiddleLayer, middle_id, user, "middle")
-    _check_version(obj, body.version)
     changes = body.model_dump(exclude_unset=True)
     changes.pop("version", None)
     old = _snapshot(obj, MIDDLE_FIELDS)
-    for f, v in changes.items():
-        setattr(obj, f, v)
-    obj.version += 1
-    obj.last_editor_id = user.id
-    new = _snapshot(obj, MIDDLE_FIELDS)
+    ok = conditional_update(db, MiddleLayer, obj.id, body.version, changes, user.id)
+    if not ok:
+        write_audit(db, request, user, "update_conflict", "middle", str(obj.id), detail=f"版本冲突:基于 v{body.version} 更新被拒(当前 v{obj.version})")
+        db.commit()
+        raise HTTPException(status_code=409, detail=f"数据已被他人更新(当前版本 v{obj.version},你基于 v{body.version} 编辑),请刷新后重试")
+    new = {**old, **changes}
     write_audit(db, request, user, "update", "middle", str(obj.id), old_value=old, new_value=new, detail=f"更新中间层 {obj.name}")
     db.commit()
     db.refresh(obj)

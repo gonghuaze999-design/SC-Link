@@ -16,6 +16,7 @@ from ..schemas_entities import (
     VerificationReview,
 )
 from ..services.audit import write_audit
+from ..services.locking import conditional_update
 from ..services.visibility import apply_visibility, can_access_entity
 
 router = APIRouter(tags=["customers"])
@@ -112,15 +113,15 @@ def update_customer(
     db: Session = Depends(get_db),
 ):
     obj = _customer_or_404(db, customer_id, user)
-    _check_version(obj, body.version)
     changes = body.model_dump(exclude_unset=True)
     changes.pop("version", None)
     old = {f: getattr(obj, f) for f in CUSTOMER_FIELDS}
-    for f, v in changes.items():
-        setattr(obj, f, v)
-    obj.version += 1
-    obj.last_editor_id = user.id
-    new = {f: getattr(obj, f) for f in CUSTOMER_FIELDS}
+    ok = conditional_update(db, Customer, obj.id, body.version, changes, user.id)
+    if not ok:
+        write_audit(db, request, user, "update_conflict", "customer", str(obj.id), detail=f"版本冲突:基于 v{body.version} 更新被拒(当前 v{obj.version})")
+        db.commit()
+        raise HTTPException(status_code=409, detail=f"数据已被他人更新(当前版本 v{obj.version},你基于 v{body.version} 编辑),请刷新后重试")
+    new = {**old, **changes}
     write_audit(db, request, user, "update", "customer", str(obj.id), old_value=old, new_value=new, detail=f"更新客户 {obj.name}")
     db.commit()
     db.refresh(obj)

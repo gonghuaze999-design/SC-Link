@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { changePassword } from '../api/auth'
 import { errMsg } from '../api/http'
+import AppLogo from './AppLogo.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -83,10 +84,7 @@ function logout() {
   <div class="flex h-screen">
     <aside class="w-60 bg-navy flex flex-col shrink-0">
       <div class="flex items-center gap-3 px-6 h-[72px] border-b border-white/10 shrink-0">
-        <div
-          class="w-9 h-9 rounded-xl shrink-0"
-          style="background: linear-gradient(135deg, #2563eb, #06b6d4)"
-        ></div>
+        <AppLogo :size="36" class="shrink-0" />
         <div>
           <div class="text-white text-[15px] font-bold leading-5">SC-Link</div>
           <div class="text-xs text-slate-400 leading-3 mt-0.5">供应链协同中台</div>
