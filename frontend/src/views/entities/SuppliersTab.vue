@@ -11,11 +11,13 @@ import {
   type Supplier,
 } from '../../api/entities'
 import { errMsg } from '../../api/http'
+import { listPriorities, setPriority } from '../../api/match'
 import SupplierDetail from './SupplierDetail.vue'
 
 const rows = ref<Supplier[]>([])
 const chains = ref<Chain[]>([])
 const userNames = ref<Record<number, string>>({})
+const priorities = ref<Record<number, number>>({})
 const keyword = ref('')
 const goodsType = ref('')
 const chainFilter = ref<number | ''>('')
@@ -35,8 +37,21 @@ async function load() {
     loading.value = false
   }
 }
+async function loadPriorities() {
+  const prs = await listPriorities().catch(() => [])
+  priorities.value = Object.fromEntries(prs.filter((p) => p.entity_type === 'supplier').map((p) => [p.entity_id, p.priority]))
+}
+async function quickPriority(s: Supplier, value: number) {
+  try {
+    await setPriority('supplier', s.id, value)
+    loadPriorities()
+  } catch (e) {
+    alert(errMsg(e))
+  }
+}
 onMounted(async () => {
   load()
+  loadPriorities()
   chains.value = await listChains().catch(() => [])
   userNames.value = Object.fromEntries((await listUserOptions().catch(() => [])).map((u) => [u.id, u.display_name || u.username]))
 })
@@ -163,14 +178,15 @@ const labelCls = 'block text-[13px] text-muted mb-1.5'
             <th class="px-5 py-3.5 font-medium">采购方式</th>
             <th class="px-5 py-3.5 font-medium">报价</th>
             <th class="px-5 py-3.5 font-medium">保障</th>
+            <th class="px-5 py-3.5 font-medium">优先级</th>
             <th class="px-5 py-3.5 font-medium">合作状态</th>
             <th class="px-5 py-3.5 font-medium">维护人/更新</th>
             <th class="px-5 py-3.5 font-medium text-right">操作</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-if="loading"><td colspan="9" class="px-4 py-8 text-center text-muted">加载中…</td></tr>
-          <tr v-else-if="!rows.length"><td colspan="9" class="px-4 py-8 text-center text-muted">暂无供货方,点击右上角新增</td></tr>
+          <tr v-if="loading"><td colspan="10" class="px-4 py-8 text-center text-muted">加载中…</td></tr>
+          <tr v-else-if="!rows.length"><td colspan="10" class="px-4 py-8 text-center text-muted">暂无供货方,点击右上角新增</td></tr>
           <tr v-for="s in rows" :key="s.id" class="border-b border-line hover:bg-slate-50/60 transition">
             <td class="px-5 py-3.5">
               <div class="font-medium">{{ s.name }}</div>
@@ -183,6 +199,16 @@ const labelCls = 'block text-[13px] text-muted mb-1.5'
             <td class="px-5 py-3.5 text-muted">{{ (s.procurement_modes || []).join(' / ') || '—' }}</td>
             <td class="px-5 py-3.5" style="font-variant-numeric: tabular-nums">{{ s.price != null ? `${s.price.toLocaleString()} ${s.currency}` : '—' }}</td>
             <td class="px-5 py-3.5 text-muted">{{ s.guarantee_type ? `${s.guarantee_type}${s.guarantee_ratio ? ' ' + s.guarantee_ratio : ''}` : '—' }}</td>
+            <td class="px-5 py-3.5">
+              <select
+                :value="priorities[s.id] ?? ''"
+                class="border border-line rounded-lg px-2 py-1 text-xs outline-none focus:border-primary bg-white"
+                @change="quickPriority(s, Number(($event.target as HTMLSelectElement).value))"
+              >
+                <option value="">默认</option>
+                <option v-for="n in 9" :key="n" :value="n">{{ n }}</option>
+              </select>
+            </td>
             <td class="px-5 py-3.5">
               <span class="text-xs px-2 py-0.5 rounded" :class="s.coop_status === '合作中' ? 'bg-green-50 text-green-600' : s.coop_status === '终止' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'">{{ s.coop_status }}</span>
             </td>

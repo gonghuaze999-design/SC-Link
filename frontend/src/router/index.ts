@@ -20,6 +20,16 @@ const router = createRouter({
           meta: { title: '工作台' },
         },
         {
+          path: 'board',
+          component: () => import('../views/BoardView.vue'),
+          meta: { title: '供需看板' },
+        },
+        {
+          path: 'match',
+          component: () => import('../views/MatchView.vue'),
+          meta: { title: '匹配中心' },
+        },
+        {
           path: 'entities',
           component: () => import('../views/EntitiesView.vue'),
           meta: { title: '主体管理' },
