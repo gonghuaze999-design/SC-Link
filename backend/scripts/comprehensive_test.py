@@ -799,7 +799,7 @@ def run_all(m):
 
     def k11():
         # 包裹价差:协议价 1390000,真实价 1360000,20台 → 包裹价差 600000;上游居间定额 300000 → 中间层收益 300000;前置 20% → 60000
-        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}包裹价差链路", "quantity": 20, "upstream_price": 136, "downstream_price": 142, "wrapped_spread": 60, "supplier_fee_fixed": 30, "upfront_percent": 20})
+        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}包裹价差链路", "quantity": 20, "upstream_price": 136, "downstream_price": 142, "wrapped_spread": 3, "supplier_fee_fixed": 30, "upfront_percent": 20})
         pid = r.json()["id"]
         d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
         mm = d["middle_metrics"][0] if d["middle_metrics"] else None

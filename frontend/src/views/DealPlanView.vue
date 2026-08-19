@@ -257,7 +257,7 @@ onMounted(loadPlans)
           <div class="text-base font-bold">{{ current.title }}</div>
           <div class="text-xs text-muted mt-1">
             {{ current.quantity }} 台 · 上游 {{ current.upstream_price != null ? `${current.upstream_price.toLocaleString()} 万/台` : '—' }} / 下游 {{ current.downstream_price != null ? `${current.downstream_price.toLocaleString()} 万/台` : '—' }} · {{ current.payment_mode }}
-            <span v-if="current.wrapped_spread != null" class="ml-3 px-2 py-0.5 rounded bg-amber-50 text-amber-700">包裹价差 {{ current.wrapped_spread.toLocaleString() }} 万<span v-if="current.supplier_fee_fixed != null"> · 上游居间 {{ current.supplier_fee_fixed.toLocaleString() }} 万</span><span v-if="current.upfront_percent != null"> · 前置 {{ current.upfront_percent }}%</span></span>
+            <span v-if="current.wrapped_spread != null" class="ml-3 px-2 py-0.5 rounded bg-amber-50 text-amber-700">包裹价差 {{ current.wrapped_spread.toLocaleString() }} 万/台 × {{ current.quantity }} 台 = {{ (current.wrapped_spread * current.quantity).toLocaleString() }} 万<span v-if="current.supplier_fee_fixed != null"> · 上游居间 {{ current.supplier_fee_fixed.toLocaleString() }} 万</span><span v-if="current.upfront_percent != null"> · 前置 {{ current.upfront_percent }}%</span></span>
           </div>
         </div>
         <div class="ml-auto flex gap-2">
@@ -337,7 +337,7 @@ onMounted(loadPlans)
             <div>③ 居间前置(上游提前返):<b class="text-amber-600">{{ money(m.upfront_amount || m.upfront_fee) }}</b><div class="text-xs text-muted">动作流实际入账 {{ money(m.upfront_fee) }}</div></div>
           </div>
           <div v-if="m.wrapped_spread_total > 0" class="mt-3 border-t border-amber-200 pt-3 text-xs" style="font-variant-numeric: tabular-nums">
-            <div class="font-bold text-amber-700 mb-1.5">包裹价差构成(用户输入 {{ current.wrapped_spread != null ? `${current.wrapped_spread.toLocaleString()} 万` : '—' }})</div>
+            <div class="font-bold text-amber-700 mb-1.5">包裹价差构成({{ current.wrapped_spread != null ? `${current.wrapped_spread.toLocaleString()} 万/台 × ${current.quantity} 台` : '未填写' }})</div>
             <div class="grid grid-cols-4 gap-2">
               <div>包裹价差总额:<b>{{ money(m.wrapped_spread_total) }}</b></div>
               <div>− 上游居间定额(完成后给):<b>{{ money(m.supplier_fee_fixed) }}</b></div>
@@ -360,7 +360,7 @@ onMounted(loadPlans)
           <div><label :class="labelCls">上游真实供货价(万元/台)</label><input v-model="form.upstream_price" type="number" :class="inputCls" placeholder="如 136" /></div>
           <div><label :class="labelCls">下游单价(万元/台)</label><input v-model="form.downstream_price" type="number" :class="inputCls" placeholder="如 142" /></div>
           <div class="col-span-2 text-xs font-bold text-primary pt-1">包裹价差(万元,直接输入;拆分给上游居间与中间层)</div>
-          <div><label :class="labelCls">上游包裹价差(万元)</label><input v-model="form.wrapped_spread" type="number" :class="inputCls" placeholder="如 60" /></div>
+          <div><label :class="labelCls">上游包裹价差(万元/台,单台)</label><input v-model="form.wrapped_spread" type="number" :class="inputCls" placeholder="如 3" /></div>
           <div><label :class="labelCls">上游居间定额(万元,交易完成后给)</label><input v-model="form.supplier_fee_fixed" type="number" :class="inputCls" placeholder="如 30" /></div>
           <div><label :class="labelCls">居间前置比例 %(通常 10-30)</label><input v-model="form.upfront_percent" type="number" :class="inputCls" placeholder="基于中间层包裹收益" /></div>
           <template v-if="form.payment_mode.startsWith('信用证')">
@@ -425,8 +425,8 @@ onMounted(loadPlans)
           <div v-if="flowForm.amount_type === 'fixed'"><label :class="labelCls">金额(万元)</label><input v-model="flowForm.amount" type="number" :class="inputCls" /></div>
           <div v-else><label :class="labelCls">比例 %</label><input v-model="flowForm.percent" type="number" :class="inputCls" placeholder="如 20" /></div>
           <div v-if="['wrapped_spread', 'middle_wrapped'].includes(flowForm.base)" class="col-span-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            基数说明:上游包裹价差 = <b>{{ current?.wrapped_spread != null ? current.wrapped_spread + ' 万' : '未填写' }}</b>(在方案区右上角「编辑」中填写)
-            <span v-if="current?.supplier_fee_fixed != null">;中间层包裹收益 = 包裹价差 − 上游居间定额 {{ current.supplier_fee_fixed }} 万 = <b>{{ ((current.wrapped_spread ?? 0) - current.supplier_fee_fixed).toLocaleString() }} 万</b></span>
+            基数说明:上游包裹价差 = <b>{{ current?.wrapped_spread != null ? current.wrapped_spread + ' 万/台 × ' + (current.quantity ?? 0) + ' 台 = ' + (current.wrapped_spread * (current.quantity ?? 0)).toLocaleString() + ' 万' : '未填写(在方案区右上角「编辑」中填写)' }}</b>
+            <span v-if="current?.supplier_fee_fixed != null">;中间层包裹收益 = 包裹价差总额 − 上游居间定额 {{ current.supplier_fee_fixed }} 万 = <b>{{ ((current.wrapped_spread ?? 0) * (current.quantity ?? 0) - current.supplier_fee_fixed).toLocaleString() }} 万</b></span>
           </div>
         </div>
         <div class="flex justify-end gap-2 mt-5">
