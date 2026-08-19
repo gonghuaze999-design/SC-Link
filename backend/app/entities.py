@@ -383,7 +383,8 @@ class DealPlan(Base):
     downstream_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)  # 下游单价
     currency: Mapped[str] = mapped_column(String(8), default="CNY")
     payment_mode: Mapped[str] = mapped_column(String(32), default="预付款")  # 预付款/信用证-国内/信用证-跨境
-    wrapped_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)  # 与上游的包裹协议价(≥上游真实价)
+    wrapped_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)  # (旧)与上游的包裹协议价
+    wrapped_spread: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)  # 包裹价差(万元,用户直接输入)
     supplier_fee_fixed: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)  # 上游居间定额(交易完成后支付)
     upfront_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 居间前置比例(基于中间层包裹收益,通常10-30%)
     lc_agent_middle: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 代开证中间层节点
@@ -410,6 +411,15 @@ class DealNode(Base):
     entity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     seq: Mapped[int] = mapped_column(Integer, default=0)
     note: Mapped[str] = mapped_column(String(256), default="")
+    # 中间层功能定位:交易居间(价差/截流/前置) / 代开信用证 / 开保函(代开费用+收益,保证金为押金)
+    purpose: Mapped[str] = mapped_column(String(16), default="交易居间")
+    fee_fixed: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)  # 代开费用定额(万元,交银行)
+    fee_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 代开费用比例%
+    fee_base: Mapped[str] = mapped_column(String(16), default="downstream_total")
+    income_fixed: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)  # 代开收益定额(万元)
+    income_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 代开收益比例%
+    income_base: Mapped[str] = mapped_column(String(16), default="downstream_total")
+    deposit_fixed: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)  # 保证金/押金(万元,不计收益)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

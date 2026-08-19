@@ -707,7 +707,7 @@ def run_all(m):
 
     # ---- K. 成本收益(交易链路测算) ----
     def k1():
-        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}三方链路测算", "quantity": 20, "upstream_price": 1360000, "downstream_price": 1420000, "payment_mode": "预付款"})
+        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}三方链路测算", "quantity": 20, "upstream_price": 136, "downstream_price": 142, "payment_mode": "预付款"})
         m["plan_id"] = r.json().get("id") if r.status_code == 201 else None
         return r.status_code == 201, f"HTTP {r.status_code}"
     t(k1, "K.成本收益", "创建交易方案", "一般用户")
@@ -748,9 +748,9 @@ def run_all(m):
     def k6():
         r = req("GET", f"/deal-plans/{m['plan_id']}/compute", ta)
         d = r.json()
-        spread_ok = abs(d["spread"] - 1200000) < 1
-        held_ok = abs(d["middle_metrics"][0]["held_peak"] - 17340000) < 1
-        upfront_ok = abs(d["middle_metrics"][0]["upfront_fee"] - 180000) < 1
+        spread_ok = abs(d["spread"] - 120) < 0.01
+        held_ok = abs(d["middle_metrics"][0]["held_peak"] - 1734) < 0.01
+        upfront_ok = abs(d["middle_metrics"][0]["upfront_fee"] - 18) < 0.01
         return spread_ok and held_ok and upfront_ok, f"价差={d['spread']},截流峰值={d['middle_metrics'][0]['held_peak']},居间前置={d['middle_metrics'][0]['upfront_fee']}"
     t(k6, "K.成本收益", "测算引擎正确性(价差/截流峰值/居间前置)", "一般用户")
 
@@ -770,11 +770,11 @@ def run_all(m):
 
     def k9():
         # 信用证模式成本
-        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}信用证链路", "quantity": 10, "upstream_price": 1000000, "downstream_price": 1050000, "payment_mode": "信用证-国内", "lc_deposit_percent": 20, "lc_fee_percent": 1.5})
+        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}信用证链路", "quantity": 10, "upstream_price": 100, "downstream_price": 105, "payment_mode": "信用证-国内", "lc_deposit_percent": 20, "lc_fee_percent": 1.5})
         pid = r.json()["id"]
         d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
         lc = d["lc_cost"]
-        ok = lc is not None and abs(lc["deposit"] - 2100000) < 1 and abs(lc["fee"] - 157500) < 1
+        ok = lc is not None and abs(lc["deposit"] - 210) < 0.01 and abs(lc["fee"] - 15.75) < 0.01
         return ok, f"保证金={lc['deposit'] if lc else None},开证费={lc['fee'] if lc else None}"
     t(k9, "K.成本收益", "信用证代开成本测算(保证金+费率)", "一般用户")
 
@@ -799,7 +799,7 @@ def run_all(m):
 
     def k11():
         # 包裹价差:协议价 1390000,真实价 1360000,20台 → 包裹价差 600000;上游居间定额 300000 → 中间层收益 300000;前置 20% → 60000
-        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}包裹价差链路", "quantity": 20, "upstream_price": 1360000, "downstream_price": 1420000, "wrapped_price": 1390000, "supplier_fee_fixed": 300000, "upfront_percent": 20})
+        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}包裹价差链路", "quantity": 20, "upstream_price": 136, "downstream_price": 142, "wrapped_spread": 60, "supplier_fee_fixed": 30, "upfront_percent": 20})
         pid = r.json()["id"]
         d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
         mm = d["middle_metrics"][0] if d["middle_metrics"] else None
@@ -808,11 +808,11 @@ def run_all(m):
             d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
             mm = d["middle_metrics"][0]
         ok = (
-            abs(mm["wrapped_spread_total"] - 600000) < 1
-            and abs(mm["supplier_fee_fixed"] - 300000) < 1
-            and abs(mm["middle_wrapped"] - 300000) < 1
-            and abs(mm["upfront_amount"] - 60000) < 1
-            and abs(mm["upfront_remain"] - 240000) < 1
+            abs(mm["wrapped_spread_total"] - 60) < 0.01
+            and abs(mm["supplier_fee_fixed"] - 30) < 0.01
+            and abs(mm["middle_wrapped"] - 30) < 0.01
+            and abs(mm["upfront_amount"] - 6) < 0.01
+            and abs(mm["upfront_remain"] - 24) < 0.01
         )
         return ok, f"包裹价差={mm['wrapped_spread_total']},上游居间={mm['supplier_fee_fixed']},中间层收益={mm['middle_wrapped']},前置={mm['upfront_amount']},剩余={mm['upfront_remain']}"
     t(k11, "K.成本收益", "包裹价差模型(协议价-定额-前置比例)", "一般用户")
@@ -831,8 +831,24 @@ def run_all(m):
         r = req("POST", f"/deal-plans/{pid}/flows", ta, {"seq": 1, "flow_type": "upfront_fee", "label": "居间前置(中间层收益20%)", "from_node_id": sup, "to_node_id": mid, "amount_type": "percent", "percent": 20, "base": "middle_wrapped"})
         d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
         mid_flows = [x for x in d["nodes"] if x["node_id"] == mid][0]
-        return r.status_code == 201 and abs(mid_flows["receive_total"] - 60000) < 1, f"动作入账 {mid_flows['receive_total']}(期望 60000)"
+        return r.status_code == 201 and abs(mid_flows["receive_total"] - 6) < 0.01, f"动作入账 {mid_flows['receive_total']} 万(期望 6 万)"
     t(k12, "K.成本收益", "居间前置动作按「中间层包裹收益」基数计", "一般用户")
+
+    def k13():
+        # 代开证中间层:收益=代开费用(交银行)+收益(定额/比例);保证金为押金不计收益
+        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}代开证链路", "quantity": 10, "upstream_price": 100, "downstream_price": 105})
+        pid = r.json()["id"]
+        req("POST", f"/deal-plans/{pid}/nodes", ta, {"role": "middle", "name": "代开证主体", "seq": 1, "purpose": "代开信用证", "fee_percent": 1.5, "fee_base": "downstream_total", "income_fixed": 2, "deposit_fixed": 50})
+        d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
+        mm = d["middle_metrics"][0]
+        ok = (
+            mm["purpose"] == "代开信用证"
+            and abs(mm["fee_amount"] - 15.75) < 0.01
+            and abs(mm["income_amount"] - 2) < 0.01
+            and abs(mm["deposit"] - 50) < 0.01
+        )
+        return ok, f"代开费用={mm['fee_amount']}万(交银行),收益={mm['income_amount']}万,押金={mm['deposit']}万"
+    t(k13, "K.成本收益", "代开证中间层收益模型(费用+收益,押金不计)", "一般用户")
 
     # ---- L. 值班机器人 ----
     def l1():

@@ -15,9 +15,9 @@ def compute(plan, nodes: list[DealNode], flows: list[DealFlow]) -> dict:
     upstream_total = (float(plan.upstream_price) if plan.upstream_price else 0) * qty
     downstream_total = (float(plan.downstream_price) if plan.downstream_price else 0) * qty
     spread = downstream_total - upstream_total
-    # 包裹价差:协议价(包裹价)与上游真实价之差;拆分 = 上游居间定额 + 中间层包裹收益
-    wrapped_spread_total = 0.0
-    if plan.wrapped_price is not None and plan.upstream_price:
+    # 包裹价差:用户直接输入(万元);拆分 = 上游居间定额 + 中间层包裹收益
+    wrapped_spread_total = float(plan.wrapped_spread or 0)
+    if wrapped_spread_total == 0 and plan.wrapped_price is not None and plan.upstream_price:
         wrapped_spread_total = (float(plan.wrapped_price) - float(plan.upstream_price)) * qty
     fixed = float(plan.supplier_fee_fixed or 0)
     middle_wrapped = max(wrapped_spread_total - fixed, 0.0)
@@ -68,21 +68,38 @@ def compute(plan, nodes: list[DealNode], flows: list[DealFlow]) -> dict:
             continue
         s = stats[n.id]
         upfront = sum(x["amount"] for x in s["flows"] if x["type"] in ("upfront_fee", "fee"))
+        # 代开证/开保函中间层:收益 = 代开费用(交银行) + 收益(定额或比例),保证金为押金不计收益
+        def _amt(fixed_v, percent_v, base_key):
+            if percent_v is not None:
+                return float(totals.get(base_key or "downstream_total", 0)) * float(percent_v) / 100
+            return float(fixed_v or 0)
+
+        fee_amount = _amt(n.fee_fixed, n.fee_percent, n.fee_base)
+        income_amount = _amt(n.income_fixed, n.income_percent, n.income_base)
+        deposit_amount = float(n.deposit_fixed or 0)
+        if deposit_amount == 0 and plan.lc_deposit_percent is not None:
+            deposit_amount = downstream_total * float(plan.lc_deposit_percent) / 100
+
         middle_metrics.append(
             {
                 "node_id": n.id,
                 "name": n.name,
+                "purpose": n.purpose or "交易居间",
                 "receive_total": round(s["receive"], 2),
                 "paid_total": round(s["paid"], 2),
                 "held_peak": round(s["held_peak"], 2),
                 "held_final": round(s["held_final"], 2),
                 "upfront_fee": round(upfront, 2),
-                # 包裹价差构成(测算值)
+                # 包裹价差构成(测算值,万元)
                 "wrapped_spread_total": round(wrapped_spread_total, 2),
                 "supplier_fee_fixed": round(fixed, 2),
                 "middle_wrapped": round(middle_wrapped, 2),
                 "upfront_amount": round(upfront_amount, 2),
                 "upfront_remain": round(middle_wrapped - upfront_amount, 2),
+                # 代开证/开保函收益模型(万元)
+                "fee_amount": round(fee_amount, 2),
+                "income_amount": round(income_amount, 2),
+                "deposit": round(deposit_amount, 2),
             }
         )
 
