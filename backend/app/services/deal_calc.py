@@ -1,0 +1,95 @@
+"""交易链路测算引擎:收支、截流资金峰值、价差、居间前置、代开证成本"""
+from ..entities import DealFlow, DealNode
+
+
+def flow_amount(f: DealFlow, totals: dict) -> float:
+    """动作金额:固定值或百分比×基数"""
+    if f.amount_type == "percent" and f.percent is not None:
+        base = float(totals.get(f.base or "downstream_total", 0) or 0)
+        return base * float(f.percent) / 100
+    return float(f.amount or 0)
+
+
+def compute(plan, nodes: list[DealNode], flows: list[DealFlow]) -> dict:
+    qty = plan.quantity or 0
+    upstream_total = (float(plan.upstream_price) if plan.upstream_price else 0) * qty
+    downstream_total = (float(plan.downstream_price) if plan.downstream_price else 0) * qty
+    spread = downstream_total - upstream_total
+    totals = {
+        "downstream_total": downstream_total,
+        "upstream_total": upstream_total,
+        "spread": spread,
+    }
+
+    node_map = {n.id: n for n in nodes}
+    stats = {n.id: {"receive": 0.0, "paid": 0.0, "held_peak": 0.0, "held_final": 0.0, "flows": []} for n in nodes}
+    balance = {n.id: 0.0 for n in nodes}
+
+    sorted_flows = sorted(flows, key=lambda x: (x.seq, x.id))
+    for f in sorted_flows:
+        amt = flow_amount(f, totals)
+        fr, to = f.from_node_id, f.to_node_id
+        if fr in node_map and fr != to:
+            stats[fr]["paid"] += amt
+            balance[fr] -= amt
+            stats[fr]["held_peak"] = max(stats[fr]["held_peak"], max(-balance[fr], 0.0))
+        if to in node_map and to != fr:
+            stats[to]["receive"] += amt
+            balance[to] += amt
+            stats[to]["held_peak"] = max(stats[to]["held_peak"], balance[to])
+        stats.setdefault(fr, None)
+        for nid in (fr, to):
+            if nid in stats and stats[nid] is not None:
+                stats[nid]["flows"].append(
+                    {
+                        "id": f.id, "seq": f.seq, "type": f.flow_type, "label": f.label,
+                        "amount": round(amt, 2), "from": fr, "to": to,
+                    }
+                )
+
+    for nid in balance:
+        stats[nid]["held_final"] = round(max(balance[nid], 0.0), 2)
+
+    # 中间层三收益点
+    middle_metrics = []
+    for n in sorted(nodes, key=lambda x: x.seq):
+        if n.role != "middle":
+            continue
+        s = stats[n.id]
+        upfront = sum(x["amount"] for x in s["flows"] if x["type"] in ("upfront_fee", "fee"))
+        middle_metrics.append(
+            {
+                "node_id": n.id,
+                "name": n.name,
+                "receive_total": round(s["receive"], 2),
+                "paid_total": round(s["paid"], 2),
+                "held_peak": round(s["held_peak"], 2),
+                "held_final": round(s["held_final"], 2),
+                "upfront_fee": round(upfront, 2),
+            }
+        )
+
+    # 代开证成本(保证金+开证费)
+    lc_cost = None
+    if plan.payment_mode.startswith("信用证") and plan.lc_deposit_percent is not None or plan.lc_fee_percent is not None:
+        deposit = downstream_total * (float(plan.lc_deposit_percent or 0)) / 100
+        fee = downstream_total * (float(plan.lc_fee_percent or 0)) / 100
+        lc_cost = {"deposit": round(deposit, 2), "fee": round(fee, 2), "total": round(deposit + fee, 2)}
+
+    return {
+        "totals": {k: round(v, 2) for k, v in totals.items()},
+        "spread": round(spread, 2),
+        "nodes": [
+            {
+                "node_id": n.id, "role": n.role, "name": n.name, "seq": n.seq,
+                "receive_total": round(stats[n.id]["receive"], 2),
+                "paid_total": round(stats[n.id]["paid"], 2),
+                "net": round(stats[n.id]["receive"] - stats[n.id]["paid"], 2),
+                "held_peak": round(stats[n.id]["held_peak"], 2),
+                "held_final": round(stats[n.id]["held_final"], 2),
+            }
+            for n in sorted(nodes, key=lambda x: x.seq)
+        ],
+        "middle_metrics": middle_metrics,
+        "lc_cost": lc_cost,
+    }

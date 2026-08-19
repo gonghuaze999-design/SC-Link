@@ -26,17 +26,31 @@ def _call(parts: list[dict]) -> str | None:
     if not ai_enabled():
         return None
     body = json.dumps({"contents": [{"parts": parts}]}).encode("utf-8")
-    req = urllib.request.Request(
-        _gemini_url() + f"?key={settings.gemini_api_key}",
-        data=body,
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        return data["candidates"][0]["content"]["parts"][0]["text"]
-    except Exception:
-        return None
+    for attempt in range(2):
+        req = urllib.request.Request(
+            _gemini_url() + f"?key={settings.gemini_api_key}",
+            data=body,
+            headers={"Content-Type": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            text = data["candidates"][0]["content"]["parts"][0]["text"]
+            if text and text.strip():
+                return text
+            if attempt == 0:
+                import time
+
+                time.sleep(2)
+                continue
+            return text
+        except Exception:
+            if attempt == 0:
+                import time
+
+                time.sleep(2)
+                continue
+    return None
 
 
 def extract_publication_fields(text: str) -> dict | None:

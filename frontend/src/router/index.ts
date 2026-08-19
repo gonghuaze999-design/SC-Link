@@ -30,6 +30,16 @@ const router = createRouter({
           meta: { title: '匹配中心' },
         },
         {
+          path: 'deals',
+          component: () => import('../views/DealPlanView.vue'),
+          meta: { title: '成本收益' },
+        },
+        {
+          path: 'duty',
+          component: () => import('../views/DutyView.vue'),
+          meta: { title: '值班机器人' },
+        },
+        {
           path: 'entities',
           component: () => import('../views/EntitiesView.vue'),
           meta: { title: '主体管理' },

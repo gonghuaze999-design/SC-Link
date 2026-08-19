@@ -624,3 +624,99 @@ class BreachUpdate(BaseModel):
 
 class AiExtractRequest(BaseModel):
     text: str = Field(min_length=5, max_length=8000)
+
+
+# ---------- 成本收益 ----------
+class DealPlanOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    title: str
+    order_id: int | None
+    product_line_id: int | None
+    quantity: int
+    upstream_price: float | None
+    downstream_price: float | None
+    currency: str
+    payment_mode: str
+    lc_agent_middle: int | None
+    lc_deposit_percent: float | None
+    lc_fee_percent: float | None
+    status: str
+    owner_id: int
+    version: int
+    updated_at: datetime
+
+
+class DealPlanIn(BaseModel):
+    title: str = Field(min_length=1, max_length=128)
+    order_id: int | None = None
+    product_line_id: int | None = None
+    quantity: int = Field(default=0, ge=0)
+    upstream_price: float | None = None
+    downstream_price: float | None = None
+    currency: str = "CNY"
+    payment_mode: str = "预付款"
+    lc_agent_middle: int | None = None
+    lc_deposit_percent: float | None = None
+    lc_fee_percent: float | None = None
+    status: str = "draft"
+
+
+class DealPlanUpdate(BaseModel):
+    title: str | None = None
+    order_id: int | None = None
+    product_line_id: int | None = None
+    quantity: int | None = None
+    upstream_price: float | None = None
+    downstream_price: float | None = None
+    currency: str | None = None
+    payment_mode: str | None = None
+    lc_agent_middle: int | None = None
+    lc_deposit_percent: float | None = None
+    lc_fee_percent: float | None = None
+    status: str | None = None
+    version: int
+
+
+class DealNodeIn(BaseModel):
+    role: str = Field(pattern="^(customer|middle|supplier)$")
+    name: str = Field(min_length=1, max_length=128)
+    entity_type: str = ""
+    entity_id: int | None = None
+    seq: int = 0
+    note: str = ""
+
+
+class DealFlowIn(BaseModel):
+    seq: int = 0
+    flow_type: str
+    label: str = Field(min_length=1, max_length=128)
+    from_node_id: int | None = None
+    to_node_id: int | None = None
+    amount_type: str = Field(default="fixed", pattern="^(fixed|percent)$")
+    amount: float | None = None
+    percent: float | None = None
+    base: str = "downstream_total"
+    note: str = ""
+
+
+# ---------- 订单合同文件 ----------
+class OrderDocOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: int
+    order_id: int
+    doc_type: str
+    file_name: str
+    file_path: str
+    note: str
+    uploaded_by_name: str
+    created_at: datetime
+
+
+class OrderDocIn(BaseModel):
+    doc_type: str = Field(pattern="^(模版|定稿扫描件|补充协议|其他)$")
+    file_name: str = ""
+    file_path: str = ""
+    note: str = ""

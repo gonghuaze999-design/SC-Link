@@ -82,6 +82,11 @@ DELETE FROM suppliers WHERE HEX(LEFT(name,1))='E38090';
 DELETE FROM customers WHERE HEX(LEFT(name,1))='E38090';
 DELETE FROM middle_layers WHERE HEX(LEFT(name,1))='E38090';
 DELETE FROM publications WHERE HEX(LEFT(title,1))='E38090';
+DELETE FROM deal_flows WHERE plan_id IN (SELECT id FROM deal_plans WHERE HEX(LEFT(title,1))='E38090');
+DELETE FROM deal_nodes WHERE plan_id IN (SELECT id FROM deal_plans WHERE HEX(LEFT(title,1))='E38090');
+DELETE FROM deal_plans WHERE HEX(LEFT(title,1))='E38090' OR owner_id IN (SELECT id FROM users WHERE username LIKE 'm_user_%');
+DELETE FROM order_documents WHERE order_id IN (SELECT id FROM orders WHERE HEX(LEFT(order_no,1))='E38090');
+DELETE FROM duty_reports;
 DELETE FROM users WHERE username LIKE 'm_user_%';
 DELETE FROM audit_logs WHERE entity_type='match';
 SET FOREIGN_KEY_CHECKS=1;
@@ -696,6 +701,158 @@ def run_all(m):
         r2 = req("POST", "/orders", ta, {"order_no": f"{PREFIX}DD-重复", "quantity": 1})
         return r2.status_code == 201 and r2.json()["id"] != first, "订单号允许重复(编号唯一性由人工管理)"
     t(j6, "J.压力", "订单号重复策略", "边界")
+
+
+
+
+    # ---- K. 成本收益(交易链路测算) ----
+    def k1():
+        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}三方链路测算", "quantity": 20, "upstream_price": 1360000, "downstream_price": 1420000, "payment_mode": "预付款"})
+        m["plan_id"] = r.json().get("id") if r.status_code == 201 else None
+        return r.status_code == 201, f"HTTP {r.status_code}"
+    t(k1, "K.成本收益", "创建交易方案", "一般用户")
+
+    def k2():
+        pid = m["plan_id"]
+        n1 = req("POST", f"/deal-plans/{pid}/nodes", ta, {"role": "customer", "name": "下游甲", "seq": 1}).json()["id"]
+        n2 = req("POST", f"/deal-plans/{pid}/nodes", ta, {"role": "middle", "name": "中间乙", "seq": 2}).json()["id"]
+        n3 = req("POST", f"/deal-plans/{pid}/nodes", ta, {"role": "supplier", "name": "上游丙", "seq": 3}).json()["id"]
+        m["n1"], m["n2"], m["n3"] = n1, n2, n3
+        return all([n1, n2, n3]), f"节点 {n1}/{n2}/{n3}"
+    t(k2, "K.成本收益", "添加三方节点(客户/中间层/供货方)", "一般用户")
+
+    def k3():
+        r = req("POST", f"/deal-plans/{m['plan_id']}/nodes", ta, {"role": "hacker", "name": "坏节点"})
+        return r.status_code == 422, "非法角色被拒(422)"
+    t(k3, "K.成本收益", "节点角色校验", "极限")
+
+    def k4():
+        pid, n1, n2, n3 = m["plan_id"], m["n1"], m["n2"], m["n3"]
+        flows = [
+            {"seq": 1, "flow_type": "payment", "label": "客户预付20%", "from_node_id": n1, "to_node_id": n2, "amount_type": "percent", "percent": 20},
+            {"seq": 2, "flow_type": "payment", "label": "中间层预付上游10%", "from_node_id": n2, "to_node_id": n3, "amount_type": "percent", "percent": 10, "base": "upstream_total"},
+            {"seq": 3, "flow_type": "guarantee", "label": "中间层向客户开保函30%", "from_node_id": n2, "to_node_id": n1, "amount_type": "percent", "percent": 30},
+            {"seq": 4, "flow_type": "upfront_fee", "label": "上游居间前置(价差15%)", "from_node_id": n3, "to_node_id": n2, "amount_type": "percent", "percent": 15, "base": "spread"},
+            {"seq": 5, "flow_type": "payment", "label": "客户尾款80%", "from_node_id": n1, "to_node_id": n2, "amount_type": "percent", "percent": 80},
+            {"seq": 6, "flow_type": "payment", "label": "中间层付清上游", "from_node_id": n2, "to_node_id": n3, "amount_type": "percent", "percent": 90, "base": "upstream_total"},
+        ]
+        codes = [req("POST", f"/deal-plans/{pid}/flows", ta, f).status_code for f in flows]
+        return codes == [201] * 6, f"HTTP {codes}"
+    t(k4, "K.成本收益", "编排 6 步资金/保函动作流", "一般用户")
+
+    def k5():
+        r = req("POST", f"/deal-plans/{m['plan_id']}/flows", ta, {"flow_type": "hacker", "label": "坏类型"})
+        return r.status_code == 400, "非法动作类型被拒(400)"
+    t(k5, "K.成本收益", "动作类型校验", "极限")
+
+    def k6():
+        r = req("GET", f"/deal-plans/{m['plan_id']}/compute", ta)
+        d = r.json()
+        spread_ok = abs(d["spread"] - 1200000) < 1
+        held_ok = abs(d["middle_metrics"][0]["held_peak"] - 17340000) < 1
+        upfront_ok = abs(d["middle_metrics"][0]["upfront_fee"] - 180000) < 1
+        return spread_ok and held_ok and upfront_ok, f"价差={d['spread']},截流峰值={d['middle_metrics'][0]['held_peak']},居间前置={d['middle_metrics'][0]['upfront_fee']}"
+    t(k6, "K.成本收益", "测算引擎正确性(价差/截流峰值/居间前置)", "一般用户")
+
+    def k7():
+        # 共享可见性:tb 与 ta 无共享 → 404;admin 可见
+        r1 = req("GET", f"/deal-plans/{m['plan_id']}", tb)
+        r2 = req("GET", f"/deal-plans/{m['plan_id']}", admin)
+        return r1.status_code == 404 and r2.status_code == 200, f"他人={r1.status_code},管理员={r2.status_code}"
+    t(k7, "K.成本收益", "方案归属隔离+管理员可见", "一般用户")
+
+    def k8():
+        # 审计留痕:方案/节点/动作操作均入库
+        logs = req("GET", "/audit-logs?entity_type=deal_plan", admin).json()
+        logs2 = req("GET", "/audit-logs?entity_type=deal_flow", admin).json()
+        return len(logs) >= 1 and len(logs2) >= 1, f"方案审计 {len(logs)} 条,动作审计 {len(logs2)} 条"
+    t(k8, "K.成本收益", "方案/动作操作全审计", "管理员")
+
+    def k9():
+        # 信用证模式成本
+        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}信用证链路", "quantity": 10, "upstream_price": 1000000, "downstream_price": 1050000, "payment_mode": "信用证-国内", "lc_deposit_percent": 20, "lc_fee_percent": 1.5})
+        pid = r.json()["id"]
+        d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
+        lc = d["lc_cost"]
+        ok = lc is not None and abs(lc["deposit"] - 2100000) < 1 and abs(lc["fee"] - 157500) < 1
+        return ok, f"保证金={lc['deposit'] if lc else None},开证费={lc['fee'] if lc else None}"
+    t(k9, "K.成本收益", "信用证代开成本测算(保证金+费率)", "一般用户")
+
+    def k10():
+        # 合同文件:上传/列表/删除全生命周期
+        oid = m["o2"]["id"]
+        small = Path("/tmp/mock_contract.png")
+        from PIL import Image
+
+        Image.new("RGB", (400, 200), "white").save(small)
+        with small.open("rb") as f:
+            up = requests.post(BASE + f"/files?entity_type=order&entity_id={oid}", headers={"Authorization": f"Bearer {ta}"}, files={"file": ("合同定稿.png", f, "image/png")}, timeout=60)
+        stored = up.json().get("stored_name")
+        r = req("POST", f"/orders/{oid}/documents", ta, {"doc_type": "定稿扫描件", "file_name": "合同定稿.png", "file_path": stored, "note": "双方已签章"})
+        doc_id = r.json().get("id")
+        r2 = req("GET", f"/orders/{oid}/documents", ta)
+        r3 = req("GET", "/audit-logs?entity_type=order_doc", admin)
+        ok = r.status_code == 201 and len(r2.json()) >= 1 and len(r3.json()) >= 1
+        ok = ok and req("DELETE", f"/order-documents/{doc_id}", ta).status_code == 200
+        return ok, f"上传={r.status_code},列表={len(r2.json())},审计={len(r3.json())},删除后清理"
+    t(k10, "K.成本收益", "合同文件全生命周期(上传/列表/审计/删除)", "一般用户")
+
+    # ---- L. 值班机器人 ----
+    def l1():
+        r = req("POST", "/duty/run", ta)
+        d = r.json().get("report", {})
+        c = d.get("content", {})
+        return r.status_code == 200 and len(c.get("matches", [])) >= 1, f"撮合建议 {len(c.get('matches', []))} 条"
+    t(l1, "L.机器人", "手动扫描生成撮合建议", "一般用户")
+
+    def l2():
+        r = req("POST", "/duty/run", ta)
+        ai = r.json().get("report", {}).get("ai_text", "")
+        if len(ai) < 20:
+            time.sleep(2)
+            r = req("POST", "/duty/run", ta)
+            ai = r.json().get("report", {}).get("ai_text", "")
+        return len(ai) >= 20, f"AI 简报 {len(ai)} 字"
+    t(l2, "L.机器人", "AI 值班简报生成", "一般用户")
+
+    def l3():
+        latest = req("GET", "/duty/reports/latest", ta).json()
+        rid = latest["report"]["id"]
+        req("POST", f"/duty/reports/{rid}/read", ta)
+        latest2 = req("GET", "/duty/reports/latest", ta).json()
+        return latest2["unread"] == 0, f"已读后未读数={latest2['unread']}"
+    t(l3, "L.机器人", "简报已读标记与未读数", "一般用户")
+
+    def l4():
+        # 陈旧提醒:回拨某供货方 updated_at 至 10 天前
+        import subprocess
+
+        subprocess.run(["docker", "exec", "sclink-mysql", "mysql", "-uroot", "-psclink_dev_root", "sc_link", "-e", f"UPDATE suppliers SET updated_at=DATE_SUB(NOW(), INTERVAL 10 DAY) WHERE id={m['s_breach']};"], capture_output=True, timeout=30)
+        r = req("POST", "/duty/run", ta)
+        stale = r.json().get("report", {}).get("content", {}).get("stale", [])
+        subprocess.run(["docker", "exec", "sclink-mysql", "mysql", "-uroot", "-psclink_dev_root", "sc_link", "-e", f"UPDATE suppliers SET updated_at=NOW() WHERE id={m['s_breach']};"], capture_output=True, timeout=30)
+        hit = any("曾违约方" in s.get("name", "") and s.get("days", 0) >= 10 for s in stale)
+        return hit, f"陈旧列表 {len(stale)} 条,命中 10 天未更新供货方={hit}"
+    t(l4, "L.机器人", "3天以上陈旧信息专项提醒", "一般用户")
+
+    def l5():
+        # 共享范围扫描:ta 与 tb 有 supplier 共享,ta 的简报应包含 tb 侧供货方相关匹配
+        r = req("POST", "/duty/run", ta)
+        matches = r.json().get("report", {}).get("content", {}).get("matches", [])
+        names = {x["name"] for mm in matches for x in mm.get("top", [])}
+        return len(names) >= 3, f"可见范围命中 {len(names)} 家供货方"
+    t(l5, "L.机器人", "共享授权范围纳入扫描", "一般用户")
+
+    def l6():
+        r = req("GET", "/duty/reports", ta)
+        return r.status_code == 200 and len(r.json()) >= 1, f"历史简报 {len(r.json())} 条"
+    t(l6, "L.机器人", "简报历史列表", "一般用户")
+
+    def l7():
+        # 机器人手动触发审计留痕
+        logs = req("GET", "/audit-logs?entity_type=duty_report", admin).json()
+        return len(logs) >= 1, f"手动触发审计 {len(logs)} 条"
+    t(l7, "L.机器人", "机器人触发审计留痕", "管理员")
 
 
 def generate_report():

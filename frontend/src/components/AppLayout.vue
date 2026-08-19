@@ -28,9 +28,16 @@ const navGroups = computed<NavGroup[]>(() => [
       { key: 'dashboard', title: '工作台', path: '/dashboard' },
       { key: 'board', title: '供需看板', path: '/board' },
       { key: 'match', title: '匹配中心', path: '/match' },
+      { key: 'deals', title: '成本收益', path: '/deals' },
       { key: 'entities', title: '主体管理', path: '/entities' },
       { key: 'orders', title: '订单跟踪', path: '/orders' },
       { key: 'analytics', title: '分析中台', path: '/analytics' },
+    ],
+  },
+  {
+    label: '智能助手',
+    items: [
+      { key: 'duty', title: '值班机器人', path: '/duty' },
     ],
   },
   {

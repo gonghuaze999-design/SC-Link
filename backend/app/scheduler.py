@@ -51,6 +51,12 @@ def close_expired_publications() -> None:
         db.close()
 
 
+def run_duty_job() -> None:
+    from .services.duty import run_duty_all
+
+    run_duty_all()
+
+
 def start_scheduler() -> None:
     global _scheduler
     if _scheduler is not None:
@@ -58,5 +64,6 @@ def start_scheduler() -> None:
     sched = BackgroundScheduler(timezone="Asia/Shanghai")
     sched.add_job(refresh_quotas, "interval", hours=1, id="refresh_quotas", coalesce=True)
     sched.add_job(close_expired_publications, "interval", hours=1, id="close_pubs", coalesce=True)
+    sched.add_job(run_duty_job, "interval", hours=1, id="duty_robot", coalesce=True, max_instances=1)
     sched.start()
     _scheduler = sched

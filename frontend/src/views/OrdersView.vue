@@ -22,6 +22,7 @@ import {
   type Track,
 } from '../api/orders'
 import { errMsg } from '../api/http'
+import { createOrderDoc, deleteOrderDoc, listOrderDocs, type OrderDoc } from '../api/deal'
 
 const rows = ref<Order[]>([])
 const suppliers = ref<Supplier[]>([])
@@ -109,12 +110,48 @@ const tracks = ref<Track[]>([])
 const breaches = ref<Breach[]>([])
 const aiSummary = ref('')
 const aiSummaryLoading = ref(false)
+const docs = ref<OrderDoc[]>([])
+const docForm = reactive({ doc_type: '定稿扫描件', note: '', file: null as File | null })
+const docUploading = ref(false)
 
 async function openDetail(o: Order) {
   detail.value = o
   tracks.value = await listTracks(o.id).catch(() => [])
   breaches.value = await listBreaches(o.id).catch(() => [])
+  docs.value = await listOrderDocs(o.id).catch(() => [])
   aiSummary.value = ''
+}
+async function uploadDoc() {
+  if (!detail.value || !docForm.file) {
+    alert('请选择合同文件(图片/PDF)')
+    return
+  }
+  docUploading.value = true
+  try {
+    const form = new FormData()
+    form.append('file', docForm.file)
+    const up = await (await import('../api/entities')).uploadFile(docForm.file, 'order', detail.value.id)
+    await createOrderDoc(detail.value.id, { doc_type: docForm.doc_type, file_name: up.original_name, file_path: up.stored_name, note: docForm.note })
+    docs.value = await listOrderDocs(detail.value.id)
+    docForm.note = ''
+    docForm.file = null
+  } catch (e) {
+    alert(errMsg(e))
+  } finally {
+    docUploading.value = false
+  }
+}
+async function removeDoc(d: OrderDoc) {
+  if (!window.confirm(`删除合同文件「${d.file_name}」?`)) return
+  try {
+    await deleteOrderDoc(d.id)
+    docs.value = await listOrderDocs(detail.value!.id)
+  } catch (e) {
+    alert(errMsg(e))
+  }
+}
+function onDocPicked(e: Event) {
+  docForm.file = (e.target as HTMLInputElement).files?.[0] || null
 }
 async function doAiSummary() {
   if (!detail.value) return
@@ -383,6 +420,34 @@ function cname(id: number | null) {
             </div>
             <div v-if="aiSummary" class="text-[13px] whitespace-pre-wrap">{{ aiSummary }}</div>
             <div v-else class="text-xs text-muted">基于订单信息与跟踪事件时间线,一键生成进度概括与下一步建议</div>
+          </div>
+
+          <!-- 合同文件(全生命周期留痕) -->
+          <div class="bg-white border border-line rounded-xl p-4 mb-4">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="text-[13px] font-bold text-primary">合同文件(模版/定稿扫描件)</div>
+              <span class="text-xs text-muted">全程留痕,可追溯</span>
+            </div>
+            <div v-for="d in docs" :key="d.id" class="flex items-center gap-2 text-xs border-b border-line last:border-0 py-2">
+              <span class="px-1.5 py-0.5 rounded" :class="d.doc_type === '定稿扫描件' ? 'bg-green-50 text-green-600' : d.doc_type === '模版' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-600'">{{ d.doc_type }}</span>
+              <span class="font-medium">{{ d.file_name }}</span>
+              <span v-if="d.note" class="text-muted">{{ d.note }}</span>
+              <span class="text-muted">{{ d.uploaded_by_name }} · {{ fmt(d.created_at) }}</span>
+              <a v-if="d.file_path" :href="`/api/files/${d.file_path}`" target="_blank" class="text-primary hover:underline ml-auto">查看</a>
+              <button class="text-red-500 hover:underline" @click="removeDoc(d)">删除</button>
+            </div>
+            <div v-if="!docs.length" class="text-xs text-muted py-1">暂无合同文件</div>
+            <div class="flex items-center gap-2 mt-2">
+              <select v-model="docForm.doc_type" class="border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-primary bg-white">
+                <option value="模版">模版</option>
+                <option value="定稿扫描件">定稿扫描件</option>
+                <option value="补充协议">补充协议</option>
+                <option value="其他">其他</option>
+              </select>
+              <input v-model="docForm.note" class="border border-line rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-primary w-40" placeholder="备注(可留空)" />
+              <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" class="text-xs" @change="onDocPicked" />
+              <button :disabled="docUploading" class="px-3 py-1.5 rounded-lg text-xs bg-primary disabled:opacity-60 text-white" @click="uploadDoc">{{ docUploading ? '上传中…' : '上传' }}</button>
+            </div>
           </div>
 
           <!-- 跟踪事件 -->

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..deps import get_current_user
-from ..entities import MiddleLayer, OverseasChain, StoredFile, Supplier
+from ..entities import MiddleLayer, Order, OverseasChain, StoredFile, Supplier
 from ..entities import Customer
 from ..models import User
 from ..services.audit import write_audit
@@ -29,6 +29,7 @@ ENTITY_CLASSES = {
     "customer": Customer,
     "middle": MiddleLayer,
     "chain": OverseasChain,
+    "order": Order,
 }
 
 

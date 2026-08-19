@@ -367,3 +367,93 @@ class Breach(Base):
     status: Mapped[str] = mapped_column(String(16), default="处理中")  # 处理中/已解决/已关闭
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class DealPlan(Base):
+    """成本收益:交易链路测算方案"""
+
+    __tablename__ = "deal_plans"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(128))
+    order_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    product_line_id: Mapped[int | None] = mapped_column(ForeignKey("product_lines.id"), nullable=True)
+    quantity: Mapped[int] = mapped_column(Integer, default=0)
+    upstream_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)  # 上游单价
+    downstream_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)  # 下游单价
+    currency: Mapped[str] = mapped_column(String(8), default="CNY")
+    payment_mode: Mapped[str] = mapped_column(String(32), default="预付款")  # 预付款/信用证-国内/信用证-跨境
+    lc_agent_middle: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 代开证中间层节点
+    lc_deposit_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 开证保证金比例
+    lc_fee_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 代开证费率(1-3%)
+    status: Mapped[str] = mapped_column(String(16), default="draft")  # draft/confirmed
+    owner_id: Mapped[int] = mapped_column(Integer, index=True)
+    last_editor_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class DealNode(Base):
+    """链路参与方节点:customer / middle / supplier,可多个中间层"""
+
+    __tablename__ = "deal_nodes"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("deal_plans.id"), index=True)
+    role: Mapped[str] = mapped_column(String(16))  # customer/middle/supplier
+    name: Mapped[str] = mapped_column(String(128))
+    entity_type: Mapped[str] = mapped_column(String(16), default="")  # supplier/customer/middle
+    entity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    seq: Mapped[int] = mapped_column(Integer, default=0)
+    note: Mapped[str] = mapped_column(String(256), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class DealFlow(Base):
+    """资金/保函动作流,按 seq 排序,用户自行增删排序"""
+
+    __tablename__ = "deal_flows"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    plan_id: Mapped[int] = mapped_column(ForeignKey("deal_plans.id"), index=True)
+    seq: Mapped[int] = mapped_column(Integer, default=0)
+    flow_type: Mapped[str] = mapped_column(String(24))  # payment/guarantee/lc_issue/margin/upfront_fee/lc_fee/goods/other
+    label: Mapped[str] = mapped_column(String(128), default="")
+    from_node_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    to_node_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    amount_type: Mapped[str] = mapped_column(String(16), default="fixed")  # fixed/percent
+    amount: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)
+    percent: Mapped[float | None] = mapped_column(Numeric(8, 3), nullable=True)  # 百分比(如 20 = 20%)
+    base: Mapped[str] = mapped_column(String(16), default="downstream_total")  # 比例基数:downstream_total/upstream_total/spread
+    note: Mapped[str] = mapped_column(String(256), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class OrderDocument(Base):
+    """订单合同文件:模版/定稿扫描件,记录业务全生命周期"""
+
+    __tablename__ = "order_documents"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), index=True)
+    doc_type: Mapped[str] = mapped_column(String(24), default="其他")  # 模版/定稿扫描件/补充协议/其他
+    file_name: Mapped[str] = mapped_column(String(256), default="")
+    file_path: Mapped[str] = mapped_column(String(256), default="")
+    note: Mapped[str] = mapped_column(String(256), default="")
+    uploaded_by: Mapped[int] = mapped_column(Integer, default=0)
+    uploaded_by_name: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class DutyReport(Base):
+    """值班机器人简报"""
+
+    __tablename__ = "duty_reports"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    content: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    ai_text: Mapped[str] = mapped_column(Text, default="")
+    is_read: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
