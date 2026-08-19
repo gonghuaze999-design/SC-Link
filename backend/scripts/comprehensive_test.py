@@ -850,6 +850,19 @@ def run_all(m):
         return ok, f"代开费用={mm['fee_amount']}万(交银行),收益={mm['income_amount']}万,押金={mm['deposit']}万"
     t(k13, "K.成本收益", "代开证中间层收益模型(费用+收益,押金不计)", "一般用户")
 
+    def k14():
+        # 节点编辑:交易居间改定位为代开信用证 → 测算输出 purpose 与费用/收益字段
+        pid = req("GET", "/deal-plans", ta).json()[0]["id"]
+        nodes = req("GET", f"/deal-plans/{pid}/nodes", ta).json()
+        mids = [n for n in nodes if n["role"] == "middle"]
+        target = mids[0]
+        r = req("PATCH", f"/deal-nodes/{target['id']}", ta, {**target, "purpose": "代开信用证", "fee_percent": 1.5, "income_fixed": 2, "deposit_fixed": 50})
+        d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
+        mm = [m for m in d["middle_metrics"] if m["node_id"] == target["id"]][0]
+        ok = r.status_code == 200 and mm["purpose"] == "代开信用证" and abs(mm["fee_amount"] - 15.75) < 0.01
+        return ok, f"定位已改={mm['purpose']},代开费用={mm['fee_amount']}万"
+    t(k14, "K.成本收益", "节点编辑改功能定位(交易居间→代开信用证)", "一般用户")
+
     # ---- L. 值班机器人 ----
     def l1():
         r = req("POST", "/duty/run", ta)

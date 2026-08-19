@@ -9,6 +9,7 @@ import {
   deleteDealPlan,
   deleteFlow,
   deleteNode,
+  updateNode,
   listDealPlans,
   listFlows,
   listNodes,
@@ -112,15 +113,31 @@ async function removePlan(p: DealPlan) {
 }
 
 // ---------- 节点 ----------
-const nodeDlg = reactive({ show: false })
+const nodeDlg = reactive({ show: false, target: null as DealNode | null })
 const nodeForm = reactive({ role: 'middle', name: '', seq: 0, purpose: '交易居间', fee_fixed: null as number | null, fee_percent: null as number | null, fee_base: 'downstream_total', income_fixed: null as number | null, income_percent: null as number | null, income_base: 'downstream_total', deposit_fixed: null as number | null })
 const isAgency = computed(() => nodeForm.role === 'middle' && ['代开信用证', '开保函'].includes(nodeForm.purpose))
+const resetNodeForm = () => Object.assign(nodeForm, { role: 'middle', name: '', seq: 0, purpose: '交易居间', fee_fixed: null, fee_percent: null, fee_base: 'downstream_total', income_fixed: null, income_percent: null, income_base: 'downstream_total', deposit_fixed: null })
+function openNode(n: DealNode | null) {
+  nodeDlg.target = n
+  if (n) {
+    Object.assign(nodeForm, {
+      role: n.role, name: n.name, seq: n.seq, purpose: n.purpose || '交易居间',
+      fee_fixed: n.fee_fixed, fee_percent: n.fee_percent, fee_base: n.fee_base || 'downstream_total',
+      income_fixed: n.income_fixed, income_percent: n.income_percent, income_base: n.income_base || 'downstream_total',
+      deposit_fixed: n.deposit_fixed,
+    })
+  } else {
+    resetNodeForm()
+  }
+  nodeDlg.show = true
+}
 async function saveNode() {
   if (!current.value || !nodeForm.name.trim()) return
   try {
-    await createNode(current.value.id, { ...nodeForm, seq: nodes.value.length + 1 })
+    if (nodeDlg.target) await updateNode(nodeDlg.target.id, { ...nodeForm })
+    else await createNode(current.value.id, { ...nodeForm, seq: nodes.value.length + 1 })
     nodeDlg.show = false
-    Object.assign(nodeForm, { role: 'middle', name: '', seq: 0, purpose: '交易居间', fee_fixed: null, fee_percent: null, fee_base: 'downstream_total', income_fixed: null, income_percent: null, income_base: 'downstream_total', deposit_fixed: null })
+    resetNodeForm()
     refresh()
   } catch (e) {
     alert(errMsg(e))
@@ -271,13 +288,15 @@ onMounted(loadPlans)
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="flex items-center mb-3">
           <div class="text-sm font-bold">链路参与方(角色配色:绿=客户 / 琥珀=中间层 / 蓝=供货方)</div>
-          <button class="ml-auto px-3 py-1.5 rounded-lg text-xs bg-primary text-white" @click="nodeDlg.show = true">+ 添加参与方</button>
+          <button class="ml-auto px-3 py-1.5 rounded-lg text-xs bg-primary text-white" @click="openNode(null)">+ 添加参与方</button>
         </div>
         <div class="grid grid-cols-3 gap-4">
           <div v-for="n in nodes" :key="n.id" class="rounded-xl border-2 p-4" :style="{ borderColor: ROLE_META[n.role]?.bar, background: ROLE_META[n.role]?.light }">
             <div class="flex items-center gap-2">
               <span class="text-xs px-2 py-0.5 rounded font-medium" :class="ROLE_META[n.role]?.cls">{{ ROLE_META[n.role]?.label }}</span>
-              <button class="ml-auto text-xs text-red-500 hover:underline" @click="removeNode(n)">删除</button>
+              <span v-if="n.role === 'middle'" class="text-xs px-1.5 py-0.5 rounded bg-white/70" :class="['代开信用证', '开保函'].includes(n.purpose) ? 'text-purple-600' : 'text-amber-600'">{{ n.purpose }}</span>
+              <button class="ml-auto text-xs text-primary hover:underline mr-2" @click="openNode(n)">编辑</button>
+              <button class="text-xs text-red-500 hover:underline" @click="removeNode(n)">删除</button>
             </div>
             <div class="text-[15px] font-bold mt-2">{{ n.name }}</div>
             <div v-if="calc" class="text-xs mt-2 space-y-0.5" style="font-variant-numeric: tabular-nums">
@@ -333,10 +352,10 @@ onMounted(loadPlans)
           </div>
           <div v-else class="grid grid-cols-3 gap-3 text-[13px]" style="font-variant-numeric: tabular-nums">
             <div>① 上下游价差:<b class="text-amber-600">{{ money(calc.spread) }}</b></div>
-            <div>② 截流资金峰值(代管资金):<b class="text-amber-600">{{ money(m.held_peak) }}</b><div class="text-xs text-muted">时点余额 {{ money(m.held_final) }}</div></div>
-            <div>③ 居间前置(上游提前返):<b class="text-amber-600">{{ money(m.upfront_amount || m.upfront_fee) }}</b><div class="text-xs text-muted">动作流实际入账 {{ money(m.upfront_fee) }}</div></div>
+            <div>② 截流资金峰值(代管资金):<b class="text-amber-600">{{ money(m.held_peak) }}</b><div class="text-xs text-muted">时点余额(动作结清后) {{ money(m.held_final) }}</div></div>
+            <div>③ 居间前置(上游提前返):<b class="text-amber-600">{{ money(m.upfront_amount || m.upfront_fee) }}</b><div class="text-xs text-muted">动作流实际入账(动作列表里编排的金额) {{ money(m.upfront_fee) }}</div></div>
           </div>
-          <div v-if="m.wrapped_spread_total > 0" class="mt-3 border-t border-amber-200 pt-3 text-xs" style="font-variant-numeric: tabular-nums">
+          <div v-if="m.wrapped_spread_total > 0 && !['代开信用证', '开保函'].includes(m.purpose)" class="mt-3 border-t border-amber-200 pt-3 text-xs" style="font-variant-numeric: tabular-nums">
             <div class="font-bold text-amber-700 mb-1.5">包裹价差构成({{ current.wrapped_spread != null ? `${current.wrapped_spread.toLocaleString()} 万/台 × ${current.quantity} 台` : '未填写' }})</div>
             <div class="grid grid-cols-4 gap-2">
               <div>包裹价差总额:<b>{{ money(m.wrapped_spread_total) }}</b></div>
@@ -379,7 +398,7 @@ onMounted(loadPlans)
     <!-- 节点弹窗 -->
     <div v-if="nodeDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="nodeDlg.show = false">
       <div class="bg-white rounded-xl w-[400px] p-6 shadow-2xl">
-        <div class="text-base font-bold mb-4">添加参与方</div>
+        <div class="text-base font-bold mb-4">{{ nodeDlg.target ? "编辑参与方" : "添加参与方" }}</div>
         <div class="grid gap-3">
           <div><label :class="labelCls">角色</label><select v-model="nodeForm.role" :class="inputCls"><option value="customer">下游客户(绿)</option><option value="middle">中间层(琥珀)</option><option value="supplier">上游供货方(蓝)</option></select></div>
           <div><label :class="labelCls">名称 *</label><input v-model="nodeForm.name" :class="inputCls" /></div>

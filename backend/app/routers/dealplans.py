@@ -109,6 +109,21 @@ def create_node(plan_id: int, body: DealNodeIn, request: Request, user: User = D
     return node
 
 
+@router.patch("/deal-nodes/{node_id}")
+def update_node(node_id: int, body: DealNodeIn, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    node = db.get(DealNode, node_id)
+    if node is None:
+        raise HTTPException(status_code=404, detail="节点不存在")
+    _plan_or_404(db, node.plan_id, user)
+    old = {"name": node.name, "role": node.role, "purpose": node.purpose}
+    for f, v in body.model_dump().items():
+        setattr(node, f, v)
+    write_audit(db, request, user, "update", "deal_node", str(node.id), old_value=old, new_value=body.model_dump(), detail=f"更新节点 {node.name}({node.purpose})")
+    db.commit()
+    db.refresh(node)
+    return node
+
+
 @router.delete("/deal-nodes/{node_id}")
 def delete_node(node_id: int, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     node = db.get(DealNode, node_id)

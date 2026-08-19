@@ -95,6 +95,10 @@ export async function createNode(planId: number, payload: Partial<DealNode>) {
   const { data } = await http.post(`/deal-plans/${planId}/nodes`, payload)
   return data as DealNode
 }
+export async function updateNode(id: number, payload: Partial<DealNode>) {
+  const { data } = await http.patch(`/deal-nodes/${id}`, payload)
+  return data as DealNode
+}
 export async function deleteNode(id: number) {
   await http.delete(`/deal-nodes/${id}`)
 }
