@@ -512,16 +512,16 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
           </div>
 
           <!-- 导出文档 -->
-          <div ref="exportRef" class="export-area mx-auto" style="width: 880px; background: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;">
+          <div ref="exportRef" class="export-area mx-auto" style="width: 880px; background: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.35;">
             <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); padding: 28px 36px; color: #fff;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div>
-                  <div style="font-size: 22px; font-weight: 700; letter-spacing: 1px;">{{ current?.title }}</div>
-                  <div style="font-size: 12px; color: #93A6C8; margin-top: 6px;">SC-Link 供应链协同中台 · 交易链路确认文档 · {{ todayText }}</div>
+                  <div style="font-size: 22px; font-weight: 700; letter-spacing: 1px; line-height: 1.25;">{{ current?.title }}</div>
+                  <div style="font-size: 12px; color: #93A6C8; margin-top: 8px; line-height: 1.2;">SC-Link 供应链协同中台 · 交易链路确认文档 · {{ todayText }}</div>
                 </div>
                 <div style="text-align: right;">
-                  <div style="display: inline-block; font-size: 12px; padding: 4px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,.4);">{{ exportMode === 'full' ? '内部全量版' : '对上下游版' }}</div>
-                  <div style="font-size: 11px; color: #93A6C8; margin-top: 8px;">编号:DL-{{ current?.id }} · 生成于 {{ todayText }}</div>
+                  <div style="display: inline-flex; align-items: center; font-size: 12px; padding: 5px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.4); line-height: 1;">{{ exportMode === 'full' ? '内部全量版' : '对上下游版' }}</div>
+                  <div style="font-size: 11px; color: #93A6C8; margin-top: 10px; line-height: 1.2;">编号:DL-{{ current?.id }} · 生成于 {{ todayText }}</div>
                 </div>
               </div>
             </div>
@@ -559,8 +559,8 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
               <div style="font-size: 14px; font-weight: 700; color: #0F172A; border-left: 4px solid #2563EB; padding-left: 10px; margin-bottom: 10px;">二、交易参与方</div>
               <div style="display: flex; gap: 10px; margin-bottom: 22px;">
                 <div v-for="n in nodes" :key="n.id" style="flex: 1; border: 1.5px solid; border-radius: 10px; padding: 10px 14px;" :style="{ borderColor: ROLE_META[n.role]?.bar, background: ROLE_META[n.role]?.light }">
-                  <div style="font-size: 11px; font-weight: 700;" :style="{ color: ROLE_META[n.role]?.bar }">{{ ROLE_META[n.role]?.label }}{{ n.role === 'middle' ? ' · ' + n.purpose : '' }}</div>
-                  <div style="font-size: 14px; font-weight: 700; margin-top: 4px; color: #0F172A;">{{ n.name }}</div>
+                  <div style="font-size: 11px; font-weight: 700; line-height: 1.3;" :style="{ color: ROLE_META[n.role]?.bar }">{{ ROLE_META[n.role]?.label }}{{ n.role === 'middle' ? ' · ' + n.purpose : '' }}</div>
+                  <div style="font-size: 14px; font-weight: 700; margin-top: 6px; color: #0F172A; line-height: 1.25;">{{ n.name }}</div>
                 </div>
               </div>
               <div style="font-size: 14px; font-weight: 700; color: #0F172A; border-left: 4px solid #2563EB; padding-left: 10px; margin-bottom: 10px;">三、履约次序(按约定先后执行)</div>
@@ -672,6 +672,10 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
   </div>
 </template>
 <style>
+.export-area th,
+.export-area td {
+  vertical-align: middle;
+}
 @media print {
   body * { visibility: hidden; }
   .export-area, .export-area * { visibility: visible; }
