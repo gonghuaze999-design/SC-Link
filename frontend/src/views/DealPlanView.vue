@@ -287,9 +287,9 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
         <button class="ml-auto text-[13px] bg-primary text-white px-3 py-1.5 rounded-lg" @click="openCreate()">+ 新建</button>
       </div>
       <div class="p-2 space-y-1 max-h-[70vh] overflow-y-auto">
-        <div v-for="p in plans" :key="p.id" class="px-3 py-2.5 rounded-lg cursor-pointer transition text-[13px]" :class="current?.id === p.id ? 'bg-blue-50 text-primary font-medium' : 'hover:bg-slate-50'" @click="openPlan(p)">
-          <div class="truncate">{{ p.title }}</div>
-          <div class="text-xs text-muted mt-0.5">{{ p.quantity }} 台 · {{ p.payment_mode }}</div>
+        <div v-for="pl in plans" :key="pl.id" class="px-3 py-2.5 rounded-lg cursor-pointer transition text-[13px]" :class="current?.id === pl.id ? 'bg-blue-50 text-primary font-medium' : 'hover:bg-slate-50'" @click="openPlan(pl)">
+          <div class="truncate">{{ pl.title }}</div>
+          <div class="text-xs text-muted mt-0.5">{{ pl.quantity }} 台 · {{ pl.payment_mode }}</div>
         </div>
         <div v-if="!plans.length" class="text-[13px] text-muted text-center py-6">暂无方案,点击新建</div>
       </div>
@@ -345,7 +345,7 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
           <button class="ml-auto px-3 py-1.5 rounded-lg text-xs bg-primary text-white" @click="openFlow(null)">+ 添加动作</button>
         </div>
         <div class="space-y-2">
-          <div v-for="(f, i) in [...flows].sort((a, b) => a.seq - b.seq)" :key="f.id" class="flex items-center gap-3 border border-line rounded-lg px-4 py-2.5">
+          <div v-for="(f, i) in sortedFlows" :key="f.id" class="flex items-center gap-3 border border-line rounded-lg px-4 py-2.5">
             <span class="w-6 h-6 rounded-full bg-navy text-white text-xs flex items-center justify-center shrink-0">{{ f.seq }}</span>
             <span class="text-xs px-2 py-0.5 rounded bg-slate-100 shrink-0">{{ FLOW_META[f.flow_type] || f.flow_type }}</span>
             <span class="text-[13px] font-medium">{{ f.label }}</span>
@@ -358,7 +358,7 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
               <button class="text-xs text-red-500 hover:underline" @click="removeFlow(f)">删除</button>
             </div>
           </div>
-          <div v-if="!flows.length" class="text-[13px] text-muted text-center py-4">暂无动作:如「客户预付 20% → 中间层」「中间层向客户开保函 30%」「上游居间前置(价差 15%)→ 中间层」</div>
+          <div v-if="!flows.length" class="text-[13px] text-muted text-center py-4">暂无动作:如「客户预付 20% → 中间层」「中间层向客户开保函 30%」「上游居间前置 → 中间层」</div>
         </div>
       </div>
 
@@ -399,7 +399,8 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
 
     <!-- 方案弹窗 -->
     <div v-if="dlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="dlg.show = false">
-      <div class="bg-white rounded-xl w-[520px] p-6 shadow-2xl">
+      <div class="bg-white rounded-xl w-[520px] max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
+        <button class="absolute top-3 right-3 w-8 h-8 rounded-lg hover:bg-slate-100 text-lg text-muted" @click="dlg.show = false">×</button>
         <div class="text-base font-bold mb-4">{{ dlg.edit ? "编辑交易方案" : "新建交易方案" }}</div>
         <div class="grid grid-cols-2 gap-3">
           <div class="col-span-2"><label :class="labelCls">方案名称 *</label><input v-model="form.title" :class="inputCls" placeholder="如:B300 三方链路 · 预付款+保函" /></div>
@@ -407,7 +408,7 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
           <div><label :class="labelCls">采购方式</label><select v-model="form.payment_mode" :class="inputCls"><option value="预付款">预付款</option><option value="信用证-国内">信用证-国内</option><option value="信用证-跨境">信用证-跨境</option></select></div>
           <div><label :class="labelCls">上游真实供货价(万元/台)</label><input v-model="form.upstream_price" type="number" :class="inputCls" placeholder="如 136" /></div>
           <div><label :class="labelCls">下游单价(万元/台)</label><input v-model="form.downstream_price" type="number" :class="inputCls" placeholder="如 142" /></div>
-          <div class="col-span-2 text-xs font-bold text-primary pt-1">包裹价差(万元,直接输入;拆分给上游居间与中间层)</div>
+          <div class="col-span-2 text-xs font-bold text-primary pt-1">包裹价差(单台价差 × 数量;拆分给上游居间与中间层)</div>
           <div><label :class="labelCls">上游包裹价差(万元/台,单台)</label><input v-model="form.wrapped_spread" type="number" :class="inputCls" placeholder="如 3" /></div>
           <div><label :class="labelCls">上游居间定额(万元,交易完成后给)</label><input v-model="form.supplier_fee_fixed" type="number" :class="inputCls" placeholder="如 30" /></div>
           <div><label :class="labelCls">居间前置比例 %(通常 10-30)</label><input v-model="form.upfront_percent" type="number" :class="inputCls" placeholder="基于包裹价差总额" /></div>
@@ -419,14 +420,15 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
         <p v-if="formErr" class="text-[13px] text-red-500 mt-3">{{ formErr }}</p>
         <div class="flex justify-end gap-2 mt-5">
           <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted" @click="dlg.show = false">取消</button>
-          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="submitPlan">创建</button>
+          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="submitPlan">保存</button>
         </div>
       </div>
     </div>
 
     <!-- 节点弹窗 -->
     <div v-if="nodeDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="nodeDlg.show = false">
-      <div class="bg-white rounded-xl w-[400px] p-6 shadow-2xl">
+      <div class="bg-white rounded-xl w-[440px] max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
+        <button class="absolute top-3 right-3 w-8 h-8 rounded-lg hover:bg-slate-100 text-lg text-muted" @click="nodeDlg.show = false">×</button>
         <div class="text-base font-bold mb-4">{{ nodeDlg.target ? "编辑参与方" : "添加参与方" }}</div>
         <div class="grid gap-3">
           <div><label :class="labelCls">角色</label><select v-model="nodeForm.role" :class="inputCls"><option value="customer">下游客户(绿)</option><option value="middle">中间层(琥珀)</option><option value="supplier">上游供货方(蓝)</option></select></div>
@@ -441,7 +443,7 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
             </select>
           </div>
           <template v-if="isAgency">
-            <div class="col-span-1 text-xs font-bold text-primary">收益模型(万元):代开费用交银行,收益为定额或比例;保证金为押金不计收益</div>
+            <div class="text-xs font-bold text-primary">收益模型(万元):代开费用交银行,收益为定额或比例;保证金为押金不计收益</div>
             <div><label :class="labelCls">代开费用定额(万元)</label><input v-model="nodeForm.fee_fixed" type="number" :class="inputCls" placeholder="定额" /></div>
             <div><label :class="labelCls">代开费用比例 %(如 1.5)</label><input v-model="nodeForm.fee_percent" type="number" :class="inputCls" placeholder="比例,基数下方选择" /></div>
             <div><label :class="labelCls">费用基数</label><select v-model="nodeForm.fee_base" :class="inputCls"><option v-for="(l, k) in BASE_META" :key="k" :value="k">{{ l }}</option></select></div>
@@ -453,14 +455,15 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
         </div>
         <div class="flex justify-end gap-2 mt-5">
           <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted" @click="nodeDlg.show = false">取消</button>
-          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="saveNode">添加</button>
+          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="saveNode">保存</button>
         </div>
       </div>
     </div>
 
     <!-- 动作弹窗 -->
     <div v-if="flowDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="flowDlg.show = false">
-      <div class="bg-white rounded-xl w-[480px] p-6 shadow-2xl">
+      <div class="bg-white rounded-xl w-[480px] max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
+        <button class="absolute top-3 right-3 w-8 h-8 rounded-lg hover:bg-slate-100 text-lg text-muted" @click="flowDlg.show = false">×</button>
         <div class="text-base font-bold mb-4">{{ flowDlg.target ? '编辑动作' : '添加动作' }}</div>
         <div class="grid grid-cols-2 gap-3">
           <div><label :class="labelCls">类型</label><select v-model="flowForm.flow_type" :class="inputCls"><option v-for="(l, k) in FLOW_META" :key="k" :value="k">{{ l }}</option></select></div>
@@ -508,10 +511,8 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
             </div>
           </div>
 
-          <!-- ===== 导出文档(版式化) ===== -->
+          <!-- 导出文档 -->
           <div ref="exportRef" class="export-area mx-auto" style="width: 880px; background: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;">
-
-            <!-- 文档头 -->
             <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); padding: 28px 36px; color: #fff;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div>
@@ -524,9 +525,7 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
                 </div>
               </div>
             </div>
-
             <div style="padding: 26px 36px 30px;">
-              <!-- 一、交易概要 -->
               <div style="font-size: 14px; font-weight: 700; color: #0F172A; border-left: 4px solid #2563EB; padding-left: 10px; margin-bottom: 10px;">一、交易概要</div>
               <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 22px;">
                 <tr>
@@ -550,13 +549,13 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
                 <tr>
                   <td style="padding: 8px 12px; background: #F8FAFC; color: #64748B;">{{ exportMode === 'full' ? '交易总额(下游)' : '客户应付总额' }}</td>
                   <td style="padding: 8px 12px; font-weight: 700; color: #2563EB;">{{ docAmount(totalDown) }}</td>
-                  <td v-if="exportMode === 'full'" style="padding: 8px 12px; background: #F8FAFC; color: #64748B;">上游总额</td>
-                  <td v-if="exportMode === 'full'" style="padding: 8px 12px;">{{ docAmount(totalUp) }}</td>
+                  <template v-if="exportMode === 'full'">
+                    <td style="padding: 8px 12px; background: #F8FAFC; color: #64748B;">上游总额</td>
+                    <td style="padding: 8px 12px;">{{ docAmount(totalUp) }}</td>
+                  </template>
                   <td v-else colspan="2"></td>
                 </tr>
               </table>
-
-              <!-- 二、交易参与方 -->
               <div style="font-size: 14px; font-weight: 700; color: #0F172A; border-left: 4px solid #2563EB; padding-left: 10px; margin-bottom: 10px;">二、交易参与方</div>
               <div style="display: flex; gap: 10px; margin-bottom: 22px;">
                 <div v-for="n in nodes" :key="n.id" style="flex: 1; border: 1.5px solid; border-radius: 10px; padding: 10px 14px;" :style="{ borderColor: ROLE_META[n.role]?.bar, background: ROLE_META[n.role]?.light }">
@@ -564,8 +563,6 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
                   <div style="font-size: 14px; font-weight: 700; margin-top: 4px; color: #0F172A;">{{ n.name }}</div>
                 </div>
               </div>
-
-              <!-- 三、履约次序 -->
               <div style="font-size: 14px; font-weight: 700; color: #0F172A; border-left: 4px solid #2563EB; padding-left: 10px; margin-bottom: 10px;">三、履约次序(按约定先后执行)</div>
               <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 22px;">
                 <thead>
@@ -583,17 +580,15 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
                     <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9;">{{ FLOW_META[f.flow_type] || f.flow_type }}</td>
                     <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; font-weight: 600;">{{ f.label }}</td>
                     <td v-if="exportMode === 'full'" style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; color: #64748B;">{{ nodeName(f.from_node_id) }} → {{ nodeName(f.to_node_id) }}</td>
-                    <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right;" :style="f.flow_type === 'guarantee' ? 'color: #B45309;' : ''">{{ docFlowAmount(f) }}</td>
+                    <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right;">{{ docFlowAmount(f) }}</td>
                   </tr>
                 </tbody>
               </table>
-
-              <!-- 四、资金计划(客户视角) -->
               <div style="font-size: 14px; font-weight: 700; color: #0F172A; border-left: 4px solid #10B981; padding-left: 10px; margin-bottom: 10px;">四、客户资金准备计划</div>
               <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 22px;">
                 <thead>
                   <tr style="background: #ECFDF5; color: #047857;">
-                    <th style="padding: 8px 12px; text-align: left; width: 50px;">期次</th>
+                    <th style="padding: 8px 12px; text-align: left; width: 60px;">期次</th>
                     <th style="padding: 8px 12px; text-align: left;">付款节点</th>
                     <th style="padding: 8px 12px; text-align: right; width: 160px;">金额</th>
                   </tr>
@@ -613,8 +608,6 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
                   </tr>
                 </tbody>
               </table>
-
-              <!-- 五、交付与保障 -->
               <div style="font-size: 14px; font-weight: 700; color: #0F172A; border-left: 4px solid #2563EB; padding-left: 10px; margin-bottom: 10px;">五、交付与保障安排</div>
               <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 22px;">
                 <tbody>
@@ -628,8 +621,6 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
                   </tr>
                 </tbody>
               </table>
-
-              <!-- 六、中间层收益测算(仅内部版) -->
               <template v-if="exportMode === 'full' && calc">
                 <div style="font-size: 14px; font-weight: 700; color: #0F172A; border-left: 4px solid #F59E0B; padding-left: 10px; margin-bottom: 10px;">六、中间层收益测算(内部)</div>
                 <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 22px;">
@@ -647,14 +638,16 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
                     <tr v-for="m in calc.middle_metrics" :key="m.node_id">
                       <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; font-weight: 600;">{{ m.name }}</td>
                       <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; color: #64748B;">{{ m.purpose }}</td>
-                      <td v-if="['代开信用证', '开保函'].includes(m.purpose)" style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right;" colspan="3">{{ docAmount(m.fee_amount) }} / {{ docAmount(m.income_amount) }} / {{ docAmount(m.deposit) }}</td>
+                      <template v-if="['代开信用证', '开保函'].includes(m.purpose)">
+                        <td colspan="3" style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: center; color: #94A3B8;">—</td>
+                        <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right;">{{ docAmount(m.fee_amount) }} / {{ docAmount(m.income_amount) }} / {{ docAmount(m.deposit) }}</td>
+                      </template>
                       <template v-else>
                         <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right;">{{ docAmount(calc.spread) }}</td>
                         <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right;">{{ docAmount(m.held_peak) }}</td>
                         <td style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right;">{{ docAmount(m.upfront_amount) }}</td>
+                        <td v-if="calc.middle_metrics.some((x) => ['代开信用证', '开保函'].includes(x.purpose))" style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right; color: #CBD5E1;">—</td>
                       </template>
-                      <td v-if="['代开信用证', '开保函'].includes(m.purpose)" style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right;">{{ docAmount(m.fee_amount) }} / {{ docAmount(m.income_amount) }} / {{ docAmount(m.deposit) }}</td>
-                      <td v-else-if="calc.middle_metrics.some((x) => ['代开信用证', '开保函'].includes(x.purpose))" style="padding: 7px 12px; border-bottom: 1px solid #F1F5F9; text-align: right; color: #CBD5E1;">—</td>
                     </tr>
                     <tr v-for="m in calc.middle_metrics.filter((x) => x.wrapped_spread_total > 0)" :key="'w' + m.node_id">
                       <td colspan="2" style="padding: 8px 12px; background: #F8FAFC; color: #64748B;">包裹价差构成({{ m.name }}):总额 {{ docAmount(m.wrapped_spread_total) }} − 上游居间定额 {{ docAmount(m.supplier_fee_fixed) }} = 中间层收益 {{ docAmount(m.middle_wrapped) }},其中前置 {{ docAmount(m.upfront_amount) }},剩余 {{ docAmount(m.upfront_remain) }} 完成后分配</td>
@@ -663,8 +656,6 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
                   </tbody>
                 </table>
               </template>
-
-              <!-- 页脚 -->
               <div style="border-top: 1px solid #E2E8F0; padding-top: 14px; font-size: 11px; color: #94A3B8; display: flex; justify-content: space-between;">
                 <div>本文件由 SC-Link 供应链协同中台生成,仅用于交易链路与履约安排确认;金额单位:万元(CNY)。</div>
                 <div style="display: flex; gap: 24px;">
@@ -680,119 +671,6 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
     </div>
   </div>
 </template>
-        </div>
-        <p v-if="formErr" class="text-[13px] text-red-500 mt-3">{{ formErr }}</p>
-        <div class="flex justify-end gap-2 mt-5">
-          <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted" @click="dlg.show = false">取消</button>
-          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="submitPlan">创建</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 节点弹窗 -->
-    <div v-if="nodeDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="nodeDlg.show = false">
-      <div class="bg-white rounded-xl w-[400px] p-6 shadow-2xl">
-        <div class="text-base font-bold mb-4">{{ nodeDlg.target ? "编辑参与方" : "添加参与方" }}</div>
-        <div class="grid gap-3">
-          <div><label :class="labelCls">角色</label><select v-model="nodeForm.role" :class="inputCls"><option value="customer">下游客户(绿)</option><option value="middle">中间层(琥珀)</option><option value="supplier">上游供货方(蓝)</option></select></div>
-          <div><label :class="labelCls">名称 *</label><input v-model="nodeForm.name" :class="inputCls" /></div>
-          <div v-if="nodeForm.role === 'middle'">
-            <label :class="labelCls">功能定位</label>
-            <select v-model="nodeForm.purpose" :class="inputCls">
-              <option value="交易居间">交易居间(价差/截流/前置)</option>
-              <option value="代开信用证">代开信用证(代开费用+收益)</option>
-              <option value="开保函">开保函(代开费用+收益)</option>
-              <option value="其他">其他</option>
-            </select>
-          </div>
-          <template v-if="isAgency">
-            <div class="col-span-1 text-xs font-bold text-primary">收益模型(万元):代开费用交银行,收益为定额或比例;保证金为押金不计收益</div>
-            <div><label :class="labelCls">代开费用定额(万元)</label><input v-model="nodeForm.fee_fixed" type="number" :class="inputCls" placeholder="定额" /></div>
-            <div><label :class="labelCls">代开费用比例 %(如 1.5)</label><input v-model="nodeForm.fee_percent" type="number" :class="inputCls" placeholder="比例,基数下方选择" /></div>
-            <div><label :class="labelCls">费用基数</label><select v-model="nodeForm.fee_base" :class="inputCls"><option v-for="(l, k) in BASE_META" :key="k" :value="k">{{ l }}</option></select></div>
-            <div><label :class="labelCls">收益定额(万元)</label><input v-model="nodeForm.income_fixed" type="number" :class="inputCls" placeholder="定额" /></div>
-            <div><label :class="labelCls">收益比例 %</label><input v-model="nodeForm.income_percent" type="number" :class="inputCls" placeholder="比例" /></div>
-            <div><label :class="labelCls">收益基数</label><select v-model="nodeForm.income_base" :class="inputCls"><option v-for="(l, k) in BASE_META" :key="k" :value="k">{{ l }}</option></select></div>
-            <div><label :class="labelCls">保证金/押金(万元,不计收益)</label><input v-model="nodeForm.deposit_fixed" type="number" :class="inputCls" placeholder="押金" /></div>
-          </template>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted" @click="nodeDlg.show = false">取消</button>
-          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="saveNode">添加</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 动作弹窗 -->
-    <div v-if="flowDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="flowDlg.show = false">
-      <div class="bg-white rounded-xl w-[480px] p-6 shadow-2xl">
-        <div class="text-base font-bold mb-4">{{ flowDlg.target ? '编辑动作' : '添加动作' }}</div>
-        <div class="grid grid-cols-2 gap-3">
-          <div><label :class="labelCls">类型</label><select v-model="flowForm.flow_type" :class="inputCls"><option v-for="(l, k) in FLOW_META" :key="k" :value="k">{{ l }}</option></select></div>
-          <div><label :class="labelCls">次序</label><input v-model="flowForm.seq" type="number" :class="inputCls" /></div>
-          <div class="col-span-2"><label :class="labelCls">说明 *</label><input v-model="flowForm.label" :class="inputCls" placeholder="如:客户预付 20%" /></div>
-          <div><label :class="labelCls">从(付款方)</label><select v-model="flowForm.from_node_id" :class="inputCls"><option :value="null">—</option><option v-for="n in nodes" :key="n.id" :value="n.id">{{ n.name }}</option></select></div>
-          <div><label :class="labelCls">到(收款方)</label><select v-model="flowForm.to_node_id" :class="inputCls"><option :value="null">—</option><option v-for="n in nodes" :key="n.id" :value="n.id">{{ n.name }}</option></select></div>
-          <div><label :class="labelCls">金额方式</label><select v-model="flowForm.amount_type" :class="inputCls"><option value="fixed">固定金额</option><option value="percent">比例</option></select></div>
-          <div><label :class="labelCls">基数(比例时)</label><select v-model="flowForm.base" :class="inputCls"><option v-for="(l, k) in BASE_META" :key="k" :value="k">{{ l }}</option></select></div>
-          <div v-if="flowForm.amount_type === 'fixed'"><label :class="labelCls">金额(万元)</label><input v-model="flowForm.amount" type="number" :class="inputCls" /></div>
-          <div v-else><label :class="labelCls">比例 %</label><input v-model="flowForm.percent" type="number" :class="inputCls" placeholder="如 20" /></div>
-          <div v-if="['wrapped_spread', 'middle_wrapped'].includes(flowForm.base)" class="col-span-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            基数说明:上游包裹价差 = <b>{{ current?.wrapped_spread != null ? current.wrapped_spread + ' 万/台 × ' + (current.quantity ?? 0) + ' 台 = ' + (current.wrapped_spread * (current.quantity ?? 0)).toLocaleString() + ' 万' : '未填写(在方案区右上角「编辑」中填写)' }}</b>
-            <span v-if="current?.supplier_fee_fixed != null">;中间层包裹收益 = 包裹价差总额 − 上游居间定额 {{ current.supplier_fee_fixed }} 万 = <b>{{ ((current.wrapped_spread ?? 0) * (current.quantity ?? 0) - current.supplier_fee_fixed).toLocaleString() }} 万</b></span>
-          </div>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted" @click="flowDlg.show = false">取消</button>
-          <button class="px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white" @click="saveFlow">保存</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 导出弹窗 -->
-    <div v-if="exportDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="exportDlg.show = false">
-      <div class="bg-white rounded-xl w-[560px] max-h-[88vh] overflow-y-auto p-6 shadow-2xl">
-        <div class="text-base font-bold mb-2">导出交易链路(可交给上下游确认)</div>
-        <div class="text-xs text-muted mb-4">勾选需要输出的内容;不勾选的项在导出文件中隐藏,适合隐藏中间层收益等敏感信息</div>
-        <div class="grid grid-cols-2 gap-2 mb-4">
-          <label class="flex items-center gap-2 text-[13px]"><input type="checkbox" v-model="exportOpts.include_amounts" /> 包含金额</label>
-          <label class="flex items-center gap-2 text-[13px]"><input type="checkbox" v-model="exportOpts.include_prices" /> 包含上下游单价</label>
-          <label class="flex items-center gap-2 text-[13px]"><input type="checkbox" v-model="exportOpts.include_middle_income" /> 包含中间层收益(价差)</label>
-          <label class="flex items-center gap-2 text-[13px]"><input type="checkbox" v-model="exportOpts.include_held" /> 包含截流资金</label>
-          <label class="flex items-center gap-2 text-[13px]"><input type="checkbox" v-model="exportOpts.include_upfront" /> 包含居间前置</label>
-          <label class="flex items-center gap-2 text-[13px]"><input type="checkbox" v-model="exportOpts.include_guarantee" /> 包含保函细节</label>
-          <label class="flex items-center gap-2 text-[13px]"><input type="checkbox" v-model="exportOpts.include_lc" /> 包含信用证/保证金</label>
-        </div>
-        <div class="flex gap-2 mb-4">
-          <button :disabled="exporting" class="px-5 py-2.5 rounded-lg text-[13px] bg-primary disabled:opacity-60 text-white" @click="exportPng">{{ exporting ? '生成中…' : '导出 PNG 图片' }}</button>
-          <button class="px-5 py-2.5 rounded-lg text-[13px] border border-primary text-primary" @click="exportPdf">导出 PDF(打印)</button>
-        </div>
-        <!-- 导出视图(截图目标;打印时仅显示此区域) -->
-        <div ref="exportRef" class="export-area border border-line rounded-xl p-5 bg-white">
-          <div class="text-center mb-3">
-            <div class="text-base font-bold">{{ current?.title }}</div>
-            <div class="text-xs text-muted">{{ current?.quantity }} 台 · {{ current?.payment_mode }}<span v-if="exportOpts.include_prices"> · 上游 {{ current?.upstream_price?.toLocaleString() }} / 下游 {{ current?.downstream_price?.toLocaleString() }} {{ current?.currency }}</span></div>
-          </div>
-          <div v-for="f in [...flows].sort((a, b) => a.seq - b.seq)" :key="f.id" class="flex items-center gap-2 text-xs py-1.5 border-b border-dashed border-line">
-            <span class="text-slate-400">{{ f.seq }}.</span>
-            <span>{{ FLOW_META[f.flow_type] }}</span>
-            <b>{{ f.label }}</b>
-            <span class="text-muted">{{ nodeName(f.from_node_id) }} → {{ nodeName(f.to_node_id) }}</span>
-            <span v-if="exportOpts.include_amounts" style="font-variant-numeric: tabular-nums">{{ flowAmountText(f) }}</span>
-            <span v-else class="text-muted">(金额已隐藏)</span>
-          </div>
-          <div v-if="calc && exportOpts.include_middle_income" class="mt-3 text-xs border rounded-lg p-3" style="background:#FFFBEB">
-            <div class="font-bold text-amber-600 mb-1">中间层收益</div>
-            <div v-if="exportOpts.include_amounts">价差 {{ money(calc.spread) }}<span v-if="exportOpts.include_upfront"> · 居间前置 {{ money(calc.middle_metrics[0]?.upfront_fee ?? 0) }}</span><span v-if="exportOpts.include_held"> · 截流峰值 {{ money(calc.middle_metrics[0]?.held_peak ?? 0) }}</span></div>
-            <div v-else class="text-muted">(金额已隐藏)</div>
-          </div>
-          <div class="text-[10px] text-slate-400 text-center mt-3">SC-Link 供应链协同中台 · 本文件仅用于交易链路确认</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <style>
 @media print {
   body * { visibility: hidden; }
