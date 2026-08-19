@@ -11,6 +11,9 @@ export interface DealPlan {
   downstream_price: number | null
   currency: string
   payment_mode: string
+  wrapped_price: number | null
+  supplier_fee_fixed: number | null
+  upfront_percent: number | null
   lc_agent_middle: number | null
   lc_deposit_percent: number | null
   lc_fee_percent: number | null
@@ -50,7 +53,12 @@ export interface DealCompute {
   totals: { downstream_total: number; upstream_total: number; spread: number }
   spread: number
   nodes: { node_id: number; role: string; name: string; seq: number; receive_total: number; paid_total: number; net: number; held_peak: number; held_final: number }[]
-  middle_metrics: { node_id: number; name: string; receive_total: number; paid_total: number; held_peak: number; held_final: number; upfront_fee: number }[]
+  middle_metrics: {
+    node_id: number; name: string; receive_total: number; paid_total: number
+    held_peak: number; held_final: number; upfront_fee: number
+    wrapped_spread_total: number; supplier_fee_fixed: number; middle_wrapped: number
+    upfront_amount: number; upfront_remain: number
+  }[]
   lc_cost: { deposit: number; fee: number; total: number } | null
 }
 

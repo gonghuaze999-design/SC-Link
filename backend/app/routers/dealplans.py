@@ -21,12 +21,13 @@ router = APIRouter(tags=["dealplans"])
 
 PLAN_FIELDS = [
     "title", "order_id", "product_line_id", "quantity", "upstream_price",
-    "downstream_price", "currency", "payment_mode", "lc_agent_middle",
+    "downstream_price", "currency", "payment_mode", "wrapped_price",
+    "supplier_fee_fixed", "upfront_percent", "lc_agent_middle",
     "lc_deposit_percent", "lc_fee_percent", "status",
 ]
 
-FLOW_TYPES = ("payment", "guarantee", "lc_issue", "margin", "upfront_fee", "lc_fee", "goods", "other")
-BASE_OPTIONS = ("downstream_total", "upstream_total", "spread")
+FLOW_TYPES = ("payment", "guarantee", "lc_issue", "margin", "upfront_fee", "supplier_return", "lc_fee", "goods", "other")
+BASE_OPTIONS = ("downstream_total", "upstream_total", "spread", "wrapped_spread", "middle_wrapped")
 
 
 def _plan_or_404(db: Session, plan_id: int, user: User) -> DealPlan:

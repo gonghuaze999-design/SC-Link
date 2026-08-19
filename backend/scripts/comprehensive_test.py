@@ -797,6 +797,43 @@ def run_all(m):
         return ok, f"上传={r.status_code},列表={len(r2.json())},审计={len(r3.json())},删除后清理"
     t(k10, "K.成本收益", "合同文件全生命周期(上传/列表/审计/删除)", "一般用户")
 
+    def k11():
+        # 包裹价差:协议价 1390000,真实价 1360000,20台 → 包裹价差 600000;上游居间定额 300000 → 中间层收益 300000;前置 20% → 60000
+        r = req("POST", "/deal-plans", ta, {"title": f"{PREFIX}包裹价差链路", "quantity": 20, "upstream_price": 1360000, "downstream_price": 1420000, "wrapped_price": 1390000, "supplier_fee_fixed": 300000, "upfront_percent": 20})
+        pid = r.json()["id"]
+        d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
+        mm = d["middle_metrics"][0] if d["middle_metrics"] else None
+        if mm is None:
+            req("POST", f"/deal-plans/{pid}/nodes", ta, {"role": "middle", "name": "中间层", "seq": 1})
+            d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
+            mm = d["middle_metrics"][0]
+        ok = (
+            abs(mm["wrapped_spread_total"] - 600000) < 1
+            and abs(mm["supplier_fee_fixed"] - 300000) < 1
+            and abs(mm["middle_wrapped"] - 300000) < 1
+            and abs(mm["upfront_amount"] - 60000) < 1
+            and abs(mm["upfront_remain"] - 240000) < 1
+        )
+        return ok, f"包裹价差={mm['wrapped_spread_total']},上游居间={mm['supplier_fee_fixed']},中间层收益={mm['middle_wrapped']},前置={mm['upfront_amount']},剩余={mm['upfront_remain']}"
+    t(k11, "K.成本收益", "包裹价差模型(协议价-定额-前置比例)", "一般用户")
+
+    def k12():
+        # 居间前置动作使用新基数 middle_wrapped:300000×20%=60000
+        pid = req("GET", "/deal-plans", ta).json()[0]["id"]
+        nodes = req("GET", f"/deal-plans/{pid}/nodes", ta).json()
+        mids = [n for n in nodes if n["role"] == "middle"]
+        sups = [n for n in nodes if n["role"] == "supplier"]
+        mid = mids[0]["id"] if mids else None
+        sup = sups[0]["id"] if sups else None
+        if not mid or not sup:
+            mid = req("POST", f"/deal-plans/{pid}/nodes", ta, {"role": "middle", "name": "中", "seq": 1}).json()["id"]
+            sup = req("POST", f"/deal-plans/{pid}/nodes", ta, {"role": "supplier", "name": "供", "seq": 2}).json()["id"]
+        r = req("POST", f"/deal-plans/{pid}/flows", ta, {"seq": 1, "flow_type": "upfront_fee", "label": "居间前置(中间层收益20%)", "from_node_id": sup, "to_node_id": mid, "amount_type": "percent", "percent": 20, "base": "middle_wrapped"})
+        d = req("GET", f"/deal-plans/{pid}/compute", ta).json()
+        mid_flows = [x for x in d["nodes"] if x["node_id"] == mid][0]
+        return r.status_code == 201 and abs(mid_flows["receive_total"] - 60000) < 1, f"动作入账 {mid_flows['receive_total']}(期望 60000)"
+    t(k12, "K.成本收益", "居间前置动作按「中间层包裹收益」基数计", "一般用户")
+
     # ---- L. 值班机器人 ----
     def l1():
         r = req("POST", "/duty/run", ta)

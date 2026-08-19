@@ -34,7 +34,11 @@ const ROLE_META: Record<string, { label: string; cls: string; bar: string; light
 }
 const FLOW_META: Record<string, string> = {
   payment: '资金支付', guarantee: '保函', lc_issue: '信用证开立', margin: '保证金',
-  upfront_fee: '居间前置', lc_fee: '开证费', goods: '货物交付', other: '其他',
+  upfront_fee: '居间前置', supplier_return: '上游居间尾款返回', lc_fee: '开证费', goods: '货物交付', other: '其他',
+}
+const BASE_META: Record<string, string> = {
+  downstream_total: '下游总额', upstream_total: '上游总额', spread: '总价差',
+  wrapped_spread: '上游包裹价差', middle_wrapped: '中间层包裹收益',
 }
 
 async function loadPlans() {
@@ -55,9 +59,25 @@ async function refresh() {
 }
 
 // ---------- 方案 ----------
-const dlg = reactive({ show: false })
-const form = reactive({ title: '', quantity: 0, upstream_price: null as number | null, downstream_price: null as number | null, currency: 'CNY', payment_mode: '预付款', lc_deposit_percent: null as number | null, lc_fee_percent: null as number | null })
+const dlg = reactive({ show: false, edit: null as DealPlan | null })
+const form = reactive({ title: '', quantity: 0, upstream_price: null as number | null, downstream_price: null as number | null, wrapped_price: null as number | null, supplier_fee_fixed: null as number | null, upfront_percent: null as number | null, currency: 'CNY', payment_mode: '预付款', lc_deposit_percent: null as number | null, lc_fee_percent: null as number | null })
 const formErr = ref('')
+function openCreate() {
+  dlg.edit = null
+  Object.assign(form, { title: '', quantity: 0, upstream_price: null, downstream_price: null, wrapped_price: null, supplier_fee_fixed: null, upfront_percent: null, currency: 'CNY', payment_mode: '预付款', lc_deposit_percent: null, lc_fee_percent: null })
+  formErr.value = ''
+  dlg.show = true
+}
+function openEditPlan(p: DealPlan) {
+  dlg.edit = p
+  Object.assign(form, {
+    title: p.title, quantity: p.quantity, upstream_price: p.upstream_price, downstream_price: p.downstream_price,
+    wrapped_price: p.wrapped_price, supplier_fee_fixed: p.supplier_fee_fixed, upfront_percent: p.upfront_percent,
+    currency: p.currency, payment_mode: p.payment_mode, lc_deposit_percent: p.lc_deposit_percent, lc_fee_percent: p.lc_fee_percent,
+  })
+  formErr.value = ''
+  dlg.show = true
+}
 async function submitPlan() {
   formErr.value = ''
   if (!form.title.trim()) {
@@ -65,10 +85,17 @@ async function submitPlan() {
     return
   }
   try {
-    const p = await createDealPlan({ ...form })
-    dlg.show = false
-    loadPlans()
-    openPlan(p)
+    if (dlg.edit) {
+      const p = await updateDealPlan(dlg.edit.id, { ...form, version: dlg.edit.version })
+      dlg.show = false
+      loadPlans()
+      openPlan(p)
+    } else {
+      const p = await createDealPlan({ ...form })
+      dlg.show = false
+      loadPlans()
+      openPlan(p)
+    }
   } catch (e) {
     formErr.value = errMsg(e)
   }
@@ -163,7 +190,7 @@ function nodeName(id: number | null) {
   return nodes.value.find((n) => n.id === id)?.name || '—'
 }
 function flowAmountText(f: DealFlow) {
-  if (f.amount_type === 'percent') return `${f.percent ?? '?'}% × ${f.base === 'downstream_total' ? '下游总额' : f.base === 'upstream_total' ? '上游总额' : '价差'}`
+  if (f.amount_type === 'percent') return `${f.percent ?? '?'}% × ${BASE_META[f.base] || f.base}`
   return `${(f.amount ?? 0).toLocaleString()}`
 }
 
@@ -210,7 +237,7 @@ onMounted(loadPlans)
     <div class="w-64 bg-white rounded-xl border border-line shrink-0">
       <div class="px-4 py-3 border-b border-line flex items-center">
         <div class="text-sm font-bold">交易方案</div>
-        <button class="ml-auto text-[13px] bg-primary text-white px-3 py-1.5 rounded-lg" @click="dlg.show = true">+ 新建</button>
+        <button class="ml-auto text-[13px] bg-primary text-white px-3 py-1.5 rounded-lg" @click="openCreate()">+ 新建</button>
       </div>
       <div class="p-2 space-y-1 max-h-[70vh] overflow-y-auto">
         <div v-for="p in plans" :key="p.id" class="px-3 py-2.5 rounded-lg cursor-pointer transition text-[13px]" :class="current?.id === p.id ? 'bg-blue-50 text-primary font-medium' : 'hover:bg-slate-50'" @click="openPlan(p)">
@@ -232,6 +259,7 @@ onMounted(loadPlans)
           </div>
         </div>
         <div class="ml-auto flex gap-2">
+          <button class="px-4 py-2 rounded-lg text-[13px] border border-line text-muted" @click="openEditPlan(current)">编辑</button>
           <button class="px-4 py-2 rounded-lg text-[13px] border border-primary text-primary" @click="exportDlg.show = true">导出图片/PDF</button>
           <button class="px-4 py-2 rounded-lg text-[13px] border border-red-200 text-red-500" @click="removePlan(current)">删除方案</button>
         </div>
@@ -298,7 +326,16 @@ onMounted(loadPlans)
           <div class="grid grid-cols-3 gap-3 text-[13px]" style="font-variant-numeric: tabular-nums">
             <div>① 上下游价差:<b class="text-amber-600">{{ money(calc.spread) }}</b></div>
             <div>② 截流资金峰值(代管资金):<b class="text-amber-600">{{ money(m.held_peak) }}</b><div class="text-xs text-muted">时点余额 {{ money(m.held_final) }}</div></div>
-            <div>③ 居间前置(上游返回):<b class="text-amber-600">{{ money(m.upfront_fee) }}</b></div>
+            <div>③ 居间前置(上游提前返):<b class="text-amber-600">{{ money(m.upfront_amount || m.upfront_fee) }}</b><div class="text-xs text-muted">动作流实际入账 {{ money(m.upfront_fee) }}</div></div>
+          </div>
+          <div v-if="m.wrapped_spread_total > 0" class="mt-3 border-t border-amber-200 pt-3 text-xs" style="font-variant-numeric: tabular-nums">
+            <div class="font-bold text-amber-700 mb-1.5">包裹价差构成(协议价 {{ current.wrapped_price?.toLocaleString() }} − 真实价 {{ current.upstream_price?.toLocaleString() }})×{{ current.quantity }} 台</div>
+            <div class="grid grid-cols-4 gap-2">
+              <div>包裹价差总额:<b>{{ money(m.wrapped_spread_total) }}</b></div>
+              <div>− 上游居间定额(完成后给):<b>{{ money(m.supplier_fee_fixed) }}</b></div>
+              <div>= 中间层包裹收益:<b class="text-amber-600">{{ money(m.middle_wrapped) }}</b></div>
+              <div>其中前置 {{ current.upfront_percent ?? '—' }}%:<b class="text-amber-600">{{ money(m.upfront_amount) }}</b><div class="text-muted">剩余 {{ money(m.upfront_remain) }} 完成后分配</div></div>
+            </div>
           </div>
         </div>
       </div>
@@ -307,13 +344,17 @@ onMounted(loadPlans)
     <!-- 方案弹窗 -->
     <div v-if="dlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="dlg.show = false">
       <div class="bg-white rounded-xl w-[520px] p-6 shadow-2xl">
-        <div class="text-base font-bold mb-4">新建交易方案</div>
+        <div class="text-base font-bold mb-4">{{ dlg.edit ? "编辑交易方案" : "新建交易方案" }}</div>
         <div class="grid grid-cols-2 gap-3">
           <div class="col-span-2"><label :class="labelCls">方案名称 *</label><input v-model="form.title" :class="inputCls" placeholder="如:B300 三方链路 · 预付款+保函" /></div>
           <div><label :class="labelCls">数量</label><input v-model="form.quantity" type="number" :class="inputCls" /></div>
           <div><label :class="labelCls">采购方式</label><select v-model="form.payment_mode" :class="inputCls"><option value="预付款">预付款</option><option value="信用证-国内">信用证-国内</option><option value="信用证-跨境">信用证-跨境</option></select></div>
-          <div><label :class="labelCls">上游单价</label><input v-model="form.upstream_price" type="number" :class="inputCls" /></div>
+          <div><label :class="labelCls">上游真实供货价</label><input v-model="form.upstream_price" type="number" :class="inputCls" /></div>
           <div><label :class="labelCls">下游单价</label><input v-model="form.downstream_price" type="number" :class="inputCls" /></div>
+          <div class="col-span-2 text-xs font-bold text-primary pt-1">包裹价差(上游协议价里包裹的利润,拆分给上游居间与中间层)</div>
+          <div><label :class="labelCls">包裹协议价(与上游签约价)</label><input v-model="form.wrapped_price" type="number" :class="inputCls" placeholder="≥ 上游真实供货价" /></div>
+          <div><label :class="labelCls">上游居间定额(交易完成后给)</label><input v-model="form.supplier_fee_fixed" type="number" :class="inputCls" placeholder="定额,如 300000" /></div>
+          <div><label :class="labelCls">居间前置比例 %(通常 10-30)</label><input v-model="form.upfront_percent" type="number" :class="inputCls" placeholder="基于中间层包裹收益" /></div>
           <template v-if="form.payment_mode.startsWith('信用证')">
             <div><label :class="labelCls">开证保证金比例 %</label><input v-model="form.lc_deposit_percent" type="number" :class="inputCls" placeholder="如 20" /></div>
             <div><label :class="labelCls">代开证费率 %(通常 1-3)</label><input v-model="form.lc_fee_percent" type="number" :class="inputCls" placeholder="如 1.5" /></div>
@@ -353,7 +394,7 @@ onMounted(loadPlans)
           <div><label :class="labelCls">从(付款方)</label><select v-model="flowForm.from_node_id" :class="inputCls"><option :value="null">—</option><option v-for="n in nodes" :key="n.id" :value="n.id">{{ n.name }}</option></select></div>
           <div><label :class="labelCls">到(收款方)</label><select v-model="flowForm.to_node_id" :class="inputCls"><option :value="null">—</option><option v-for="n in nodes" :key="n.id" :value="n.id">{{ n.name }}</option></select></div>
           <div><label :class="labelCls">金额方式</label><select v-model="flowForm.amount_type" :class="inputCls"><option value="fixed">固定金额</option><option value="percent">比例</option></select></div>
-          <div><label :class="labelCls">基数(比例时)</label><select v-model="flowForm.base" :class="inputCls"><option value="downstream_total">下游总额</option><option value="upstream_total">上游总额</option><option value="spread">价差</option></select></div>
+          <div><label :class="labelCls">基数(比例时)</label><select v-model="flowForm.base" :class="inputCls"><option v-for="(l, k) in BASE_META" :key="k" :value="k">{{ l }}</option></select></div>
           <div v-if="flowForm.amount_type === 'fixed'"><label :class="labelCls">金额</label><input v-model="flowForm.amount" type="number" :class="inputCls" /></div>
           <div v-else><label :class="labelCls">比例 %</label><input v-model="flowForm.percent" type="number" :class="inputCls" placeholder="如 20" /></div>
         </div>

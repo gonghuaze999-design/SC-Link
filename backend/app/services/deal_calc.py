@@ -15,10 +15,21 @@ def compute(plan, nodes: list[DealNode], flows: list[DealFlow]) -> dict:
     upstream_total = (float(plan.upstream_price) if plan.upstream_price else 0) * qty
     downstream_total = (float(plan.downstream_price) if plan.downstream_price else 0) * qty
     spread = downstream_total - upstream_total
+    # 包裹价差:协议价(包裹价)与上游真实价之差;拆分 = 上游居间定额 + 中间层包裹收益
+    wrapped_spread_total = 0.0
+    if plan.wrapped_price is not None and plan.upstream_price:
+        wrapped_spread_total = (float(plan.wrapped_price) - float(plan.upstream_price)) * qty
+    fixed = float(plan.supplier_fee_fixed or 0)
+    middle_wrapped = max(wrapped_spread_total - fixed, 0.0)
+    upfront_amount = 0.0
+    if plan.upfront_percent is not None:
+        upfront_amount = middle_wrapped * float(plan.upfront_percent) / 100
     totals = {
         "downstream_total": downstream_total,
         "upstream_total": upstream_total,
         "spread": spread,
+        "wrapped_spread": round(wrapped_spread_total, 2),
+        "middle_wrapped": round(middle_wrapped, 2),
     }
 
     node_map = {n.id: n for n in nodes}
@@ -66,6 +77,12 @@ def compute(plan, nodes: list[DealNode], flows: list[DealFlow]) -> dict:
                 "held_peak": round(s["held_peak"], 2),
                 "held_final": round(s["held_final"], 2),
                 "upfront_fee": round(upfront, 2),
+                # 包裹价差构成(测算值)
+                "wrapped_spread_total": round(wrapped_spread_total, 2),
+                "supplier_fee_fixed": round(fixed, 2),
+                "middle_wrapped": round(middle_wrapped, 2),
+                "upfront_amount": round(upfront_amount, 2),
+                "upfront_remain": round(middle_wrapped - upfront_amount, 2),
             }
         )
 

@@ -383,6 +383,9 @@ class DealPlan(Base):
     downstream_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)  # 下游单价
     currency: Mapped[str] = mapped_column(String(8), default="CNY")
     payment_mode: Mapped[str] = mapped_column(String(32), default="预付款")  # 预付款/信用证-国内/信用证-跨境
+    wrapped_price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)  # 与上游的包裹协议价(≥上游真实价)
+    supplier_fee_fixed: Mapped[float | None] = mapped_column(Numeric(16, 2), nullable=True)  # 上游居间定额(交易完成后支付)
+    upfront_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 居间前置比例(基于中间层包裹收益,通常10-30%)
     lc_agent_middle: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 代开证中间层节点
     lc_deposit_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 开证保证金比例
     lc_fee_percent: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)  # 代开证费率(1-3%)

@@ -639,6 +639,9 @@ class DealPlanOut(BaseModel):
     downstream_price: float | None
     currency: str
     payment_mode: str
+    wrapped_price: float | None
+    supplier_fee_fixed: float | None
+    upfront_percent: float | None
     lc_agent_middle: int | None
     lc_deposit_percent: float | None
     lc_fee_percent: float | None
@@ -657,6 +660,9 @@ class DealPlanIn(BaseModel):
     downstream_price: float | None = None
     currency: str = "CNY"
     payment_mode: str = "预付款"
+    wrapped_price: float | None = None
+    supplier_fee_fixed: float | None = None
+    upfront_percent: float | None = None
     lc_agent_middle: int | None = None
     lc_deposit_percent: float | None = None
     lc_fee_percent: float | None = None
@@ -672,6 +678,9 @@ class DealPlanUpdate(BaseModel):
     downstream_price: float | None = None
     currency: str | None = None
     payment_mode: str | None = None
+    wrapped_price: float | None = None
+    supplier_fee_fixed: float | None = None
+    upfront_percent: float | None = None
     lc_agent_middle: int | None = None
     lc_deposit_percent: float | None = None
     lc_fee_percent: float | None = None
