@@ -13,7 +13,7 @@ from ..entities import (
 )
 from ..models import User
 from ..services.ai_gateway import ai_enabled, _call
-from ..services.matching import available_quantity, hard_filters, score_supplier
+from ..services.matching import available_quantity, build_priority_cache, build_quota_cache, hard_filters, score_supplier
 from ..services.visibility import visible_owner_ids
 
 STALE_DAYS = 3
@@ -53,6 +53,9 @@ def scan_for_user(user: User) -> dict:
 
         suppliers = db.query(Supplier).filter(Supplier.owner_id.in_(s_owners)).all() if user.role != "admin" else db.query(Supplier).all()
         customers = db.query(Customer).filter(Customer.owner_id.in_(c_owners)).all() if user.role != "admin" else db.query(Customer).all()
+        # 批量缓存:配额/优先级各一次查询,避免逐条评分时的 N+1
+        quota_cache = build_quota_cache(db)
+        priority_cache = build_priority_cache(db, user.id)
         pubs = (
             db.query(Publication)
             .filter(Publication.status == "active", Publication.type == "demand")
@@ -84,7 +87,7 @@ def scan_for_user(user: User) -> dict:
             }
             ranked = []
             for s in suppliers:
-                out, fail = score_supplier(db, user.id, s, demand)
+                out, fail = score_supplier(db, user.id, s, demand, quota_cache, priority_cache)
                 if fail:
                     continue
                 ranked.append((out["score"], s))
@@ -94,7 +97,7 @@ def scan_for_user(user: User) -> dict:
                     "demand": pub.title,
                     "publication_id": pub.id,
                     "top": [
-                        {"name": s.name, "score": sc, "avail": available_quantity(db, s.id, pub.product_line_id)}
+                        {"name": s.name, "score": sc, "avail": available_quantity(db, s.id, pub.product_line_id, quota_cache)}
                         for sc, s in ranked[:3]
                     ],
                 }
@@ -109,7 +112,7 @@ def scan_for_user(user: User) -> dict:
                 continue
             ranked = []
             for s in suppliers:
-                out, fail = score_supplier(db, user.id, s, demand)
+                out, fail = score_supplier(db, user.id, s, demand, quota_cache, priority_cache)
                 if fail:
                     continue
                 ranked.append((out["score"], s))
@@ -120,7 +123,7 @@ def scan_for_user(user: User) -> dict:
                         "demand": f"客户 {c.name}(意向 {c.intent_quantity})",
                         "customer_id": c.id,
                         "top": [
-                            {"name": s.name, "score": sc, "avail": available_quantity(db, s.id, demand["product_line_id"])}
+                            {"name": s.name, "score": sc, "avail": available_quantity(db, s.id, demand["product_line_id"], quota_cache)}
                             for sc, s in ranked[:3]
                         ],
                     }

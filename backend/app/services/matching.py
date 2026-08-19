@@ -31,27 +31,36 @@ def _parse_rate(s: str) -> float | None:
         return None
 
 
-def available_quantity(db: Session, supplier_id: int, product_line_id: int | None) -> int:
-    q = db.query(SupplierQuota).filter(SupplierQuota.supplier_id == supplier_id)
-    if product_line_id is not None:
-        q = q.filter(SupplierQuota.product_line_id == product_line_id)
+def build_quota_cache(db: Session) -> dict:
+    """一次查询构建 (supplier_id, product_line_id) → 可用配额 映射,供批量评分复用"""
+    rows = (
+        db.query(SupplierQuota)
+        .filter(SupplierQuota.status.in_(("available", "locked")))
+        .all()
+    )
     today = _today()
-    total = 0
-    for quota in q.all():
-        if quota.status not in ("available", "locked"):
+    cache: dict = {}
+    for q in rows:
+        if q.quota_end_at and q.quota_end_at < today:
             continue
-        if quota.quota_end_at and quota.quota_end_at < today:
-            continue
-        total += max(0, quota.quantity - quota.used_quantity)
-    return total
+        key = (q.supplier_id, q.product_line_id)
+        cache[key] = cache.get(key, 0) + max(0, q.quantity - q.used_quantity)
+    return cache
 
 
-def hard_filters(db: Session, supplier: Supplier, demand: dict) -> str | None:
+def available_quantity(db: Session, supplier_id: int, product_line_id: int | None, cache: dict | None = None) -> int:
+    cache = cache if cache is not None else build_quota_cache(db)
+    if product_line_id is not None:
+        return cache.get((supplier_id, product_line_id), 0)
+    return sum(v for (s, _p), v in cache.items() if s == supplier_id)
+
+
+def hard_filters(db: Session, supplier: Supplier, demand: dict, quota_cache: dict | None = None) -> str | None:
     """返回不通过的原因,通过返回 None。demand: product_line_id/quantity/intent_modes"""
     if supplier.coop_status in ("暂停", "终止"):
         return "合作状态为" + supplier.coop_status
     quantity = demand.get("quantity") or 0
-    avail = available_quantity(db, supplier.id, demand.get("product_line_id"))
+    avail = available_quantity(db, supplier.id, demand.get("product_line_id"), quota_cache)
     if avail <= 0:
         return "无有效配额"
     if quantity > 0 and avail < quantity:
@@ -63,19 +72,31 @@ def hard_filters(db: Session, supplier: Supplier, demand: dict) -> str | None:
     return None
 
 
-def _priority_score(db: Session, user_id: int, supplier_id: int) -> float:
-    row = (
+def build_priority_cache(db: Session, user_id: int) -> dict:
+    rows = (
         db.query(UserPriority)
-        .filter(
-            UserPriority.user_id == user_id,
-            UserPriority.entity_type == "supplier",
-            UserPriority.entity_id == supplier_id,
-        )
-        .first()
+        .filter(UserPriority.user_id == user_id, UserPriority.entity_type == "supplier")
+        .all()
     )
-    if row is None:
-        return 50.0
-    return (row.priority - 1) / 8 * 100
+    return {r.entity_id: r.priority for r in rows}
+
+
+def _priority_score(db: Session, user_id: int, supplier_id: int, cache: dict | None = None) -> float:
+    if cache is None:
+        row = (
+            db.query(UserPriority)
+            .filter(
+                UserPriority.user_id == user_id,
+                UserPriority.entity_type == "supplier",
+                UserPriority.entity_id == supplier_id,
+            )
+            .first()
+        )
+        if row is None:
+            return 50.0
+        return (row.priority - 1) / 8 * 100
+    p = cache.get(supplier_id)
+    return ((p - 1) / 8 * 100) if p else 50.0
 
 
 def _freshness_score(updated_at: datetime) -> float:
@@ -133,12 +154,19 @@ def _credit_score(db: Session, supplier: Supplier, demand: dict) -> float:
     return max(0.0, min(100.0, score))
 
 
-def score_supplier(db: Session, user_id: int, supplier: Supplier, demand: dict):
-    fail = hard_filters(db, supplier, demand)
+def score_supplier(
+    db: Session,
+    user_id: int,
+    supplier: Supplier,
+    demand: dict,
+    quota_cache: dict | None = None,
+    priority_cache: dict | None = None,
+):
+    fail = hard_filters(db, supplier, demand, quota_cache)
     if fail:
         return None, fail
-    avail = available_quantity(db, supplier.id, demand.get("product_line_id"))
-    p_pri = _priority_score(db, user_id, supplier.id)
+    avail = available_quantity(db, supplier.id, demand.get("product_line_id"), quota_cache)
+    p_pri = _priority_score(db, user_id, supplier.id, priority_cache)
     p_fresh = _freshness_score(supplier.updated_at)
     p_pref = _preference_score(supplier, demand)
     p_price = _price_score(supplier, demand)
@@ -146,13 +174,16 @@ def score_supplier(db: Session, user_id: int, supplier: Supplier, demand: dict):
     total = round(p_pri * 0.30 + p_fresh * 0.20 + (p_pref + p_price) / 2 * 0.25 + p_credit * 0.25)
 
     reasons = []
-    row = db.query(UserPriority).filter(
-        UserPriority.user_id == user_id,
-        UserPriority.entity_type == "supplier",
-        UserPriority.entity_id == supplier.id,
-    ).first()
-    if row:
-        reasons.append(f"你设置了优先级 {row.priority}")
+    if priority_cache is None:
+        row = db.query(UserPriority).filter(
+            UserPriority.user_id == user_id,
+            UserPriority.entity_type == "supplier",
+            UserPriority.entity_id == supplier.id,
+        ).first()
+        if row:
+            reasons.append(f"你设置了优先级 {row.priority}")
+    elif supplier.id in priority_cache:
+        reasons.append(f"你设置了优先级 {priority_cache[supplier.id]}")
     days = (_today() - supplier.updated_at.date()).days if supplier.updated_at else 999
     reasons.append(f"最近更新于 {days} 天前")
     if supplier.price is not None:

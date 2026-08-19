@@ -146,7 +146,7 @@ export async function listDuty(limit = 20) {
   return data as DutyReport[]
 }
 export async function runDuty() {
-  const { data } = await http.post('/duty/run', {})
+  const { data } = await http.post('/duty/run', {}, { timeout: 90000 })
   return data as { report: DutyReport }
 }
 export async function markDutyRead(id: number) {
