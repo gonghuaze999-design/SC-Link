@@ -331,7 +331,6 @@ onMounted(loadPlans)
             <div>保证金(押金,不计收益):<b>{{ money(m.deposit) }}</b></div>
           </div>
           <div v-else class="grid grid-cols-3 gap-3 text-[13px]" style="font-variant-numeric: tabular-nums">
-          <div class="grid grid-cols-3 gap-3 text-[13px]" style="font-variant-numeric: tabular-nums">
             <div>① 上下游价差:<b class="text-amber-600">{{ money(calc.spread) }}</b></div>
             <div>② 截流资金峰值(代管资金):<b class="text-amber-600">{{ money(m.held_peak) }}</b><div class="text-xs text-muted">时点余额 {{ money(m.held_final) }}</div></div>
             <div>③ 居间前置(上游提前返):<b class="text-amber-600">{{ money(m.upfront_amount || m.upfront_fee) }}</b><div class="text-xs text-muted">动作流实际入账 {{ money(m.upfront_fee) }}</div></div>
