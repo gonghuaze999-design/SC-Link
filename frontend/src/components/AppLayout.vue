@@ -90,11 +90,11 @@ function logout() {
 <template>
   <div class="flex h-screen">
     <aside class="w-60 bg-navy flex flex-col shrink-0">
-      <div class="flex items-center gap-3 px-6 h-[72px] border-b border-white/10 shrink-0">
-        <AppLogo :size="36" class="shrink-0" />
+      <div class="flex items-center gap-3.5 px-6 h-[88px] border-b border-white/10 shrink-0">
+        <AppLogo :size="48" class="shrink-0 drop-shadow-lg" />
         <div>
-          <div class="text-white text-[15px] font-bold leading-5">SC-Link</div>
-          <div class="text-xs text-slate-400 leading-3 mt-0.5">供应链协同中台</div>
+          <div class="text-white text-lg font-bold leading-6 tracking-wide">SC-Link</div>
+          <div class="text-[13px] text-slate-400 leading-4 mt-1">供应链协同中台</div>
         </div>
       </div>
       <nav class="flex-1 overflow-y-auto py-5">
