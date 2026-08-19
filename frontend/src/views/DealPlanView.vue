@@ -257,6 +257,7 @@ onMounted(loadPlans)
           <div class="text-base font-bold">{{ current.title }}</div>
           <div class="text-xs text-muted mt-1">
             {{ current.quantity }} 台 · 上游 {{ current.upstream_price != null ? `${current.upstream_price.toLocaleString()} 万/台` : '—' }} / 下游 {{ current.downstream_price != null ? `${current.downstream_price.toLocaleString()} 万/台` : '—' }} · {{ current.payment_mode }}
+            <span v-if="current.wrapped_spread != null" class="ml-3 px-2 py-0.5 rounded bg-amber-50 text-amber-700">包裹价差 {{ current.wrapped_spread.toLocaleString() }} 万<span v-if="current.supplier_fee_fixed != null"> · 上游居间 {{ current.supplier_fee_fixed.toLocaleString() }} 万</span><span v-if="current.upfront_percent != null"> · 前置 {{ current.upfront_percent }}%</span></span>
           </div>
         </div>
         <div class="ml-auto flex gap-2">
@@ -421,8 +422,12 @@ onMounted(loadPlans)
           <div><label :class="labelCls">到(收款方)</label><select v-model="flowForm.to_node_id" :class="inputCls"><option :value="null">—</option><option v-for="n in nodes" :key="n.id" :value="n.id">{{ n.name }}</option></select></div>
           <div><label :class="labelCls">金额方式</label><select v-model="flowForm.amount_type" :class="inputCls"><option value="fixed">固定金额</option><option value="percent">比例</option></select></div>
           <div><label :class="labelCls">基数(比例时)</label><select v-model="flowForm.base" :class="inputCls"><option v-for="(l, k) in BASE_META" :key="k" :value="k">{{ l }}</option></select></div>
-          <div v-if="flowForm.amount_type === 'fixed'"><label :class="labelCls">金额</label><input v-model="flowForm.amount" type="number" :class="inputCls" /></div>
+          <div v-if="flowForm.amount_type === 'fixed'"><label :class="labelCls">金额(万元)</label><input v-model="flowForm.amount" type="number" :class="inputCls" /></div>
           <div v-else><label :class="labelCls">比例 %</label><input v-model="flowForm.percent" type="number" :class="inputCls" placeholder="如 20" /></div>
+          <div v-if="['wrapped_spread', 'middle_wrapped'].includes(flowForm.base)" class="col-span-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            基数说明:上游包裹价差 = <b>{{ current?.wrapped_spread != null ? current.wrapped_spread + ' 万' : '未填写' }}</b>(在方案区右上角「编辑」中填写)
+            <span v-if="current?.supplier_fee_fixed != null">;中间层包裹收益 = 包裹价差 − 上游居间定额 {{ current.supplier_fee_fixed }} 万 = <b>{{ ((current.wrapped_spread ?? 0) - current.supplier_fee_fixed).toLocaleString() }} 万</b></span>
+          </div>
         </div>
         <div class="flex justify-end gap-2 mt-5">
           <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted" @click="flowDlg.show = false">取消</button>
