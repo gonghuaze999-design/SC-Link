@@ -59,7 +59,7 @@ export interface DealFlow {
 }
 
 export interface DealCompute {
-  totals: { downstream_total: number; upstream_total: number; spread: number }
+  totals: { downstream_total: number; upstream_total: number; spread: number; wrapped_spread: number; middle_wrapped: number }
   spread: number
   nodes: { node_id: number; role: string; name: string; seq: number; receive_total: number; paid_total: number; net: number; held_peak: number; held_final: number }[]
   middle_metrics: {
