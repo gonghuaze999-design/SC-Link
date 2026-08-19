@@ -811,8 +811,8 @@ def run_all(m):
             abs(mm["wrapped_spread_total"] - 60) < 0.01
             and abs(mm["supplier_fee_fixed"] - 30) < 0.01
             and abs(mm["middle_wrapped"] - 30) < 0.01
-            and abs(mm["upfront_amount"] - 6) < 0.01
-            and abs(mm["upfront_remain"] - 24) < 0.01
+            and abs(mm["upfront_amount"] - 12) < 0.01
+            and abs(mm["upfront_remain"] - 18) < 0.01
         )
         return ok, f"包裹价差={mm['wrapped_spread_total']},上游居间={mm['supplier_fee_fixed']},中间层收益={mm['middle_wrapped']},前置={mm['upfront_amount']},剩余={mm['upfront_remain']}"
     t(k11, "K.成本收益", "包裹价差模型(协议价-定额-前置比例)", "一般用户")

@@ -21,9 +21,10 @@ def compute(plan, nodes: list[DealNode], flows: list[DealFlow]) -> dict:
         wrapped_spread_total = (float(plan.wrapped_price) - float(plan.upstream_price)) * qty
     fixed = float(plan.supplier_fee_fixed or 0)
     middle_wrapped = max(wrapped_spread_total - fixed, 0.0)
+    # 居间前置 = 包裹价差总额 × 比例(不是扣除上游居间后的余额×比例)
     upfront_amount = 0.0
     if plan.upfront_percent is not None:
-        upfront_amount = middle_wrapped * float(plan.upfront_percent) / 100
+        upfront_amount = wrapped_spread_total * float(plan.upfront_percent) / 100
     totals = {
         "downstream_total": downstream_total,
         "upstream_total": upstream_total,

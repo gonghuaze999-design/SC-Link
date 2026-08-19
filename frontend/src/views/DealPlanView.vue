@@ -353,7 +353,7 @@ onMounted(loadPlans)
           <div v-else class="grid grid-cols-3 gap-3 text-[13px]" style="font-variant-numeric: tabular-nums">
             <div>① 上下游价差:<b class="text-amber-600">{{ money(calc.spread) }}</b></div>
             <div>② 截流资金峰值(代管资金):<b class="text-amber-600">{{ money(m.held_peak) }}</b><div class="text-xs text-muted">时点余额(动作结清后) {{ money(m.held_final) }}</div></div>
-            <div>③ 居间前置(上游提前返):<b class="text-amber-600">{{ money(m.upfront_amount || m.upfront_fee) }}</b><div class="text-xs text-muted">动作流实际入账(动作列表里编排的金额) {{ money(m.upfront_fee) }}</div></div>
+            <div>③ 居间前置(上游提前返):<b class="text-amber-600">{{ money(m.upfront_amount) }}</b><div class="text-xs" :class="Math.abs((m.upfront_fee || 0) - (m.upfront_amount || 0)) < 0.01 ? 'text-green-600' : 'text-red-500'">动作列表已编排入账 {{ money(m.upfront_fee) }}{{ Math.abs((m.upfront_fee || 0) - (m.upfront_amount || 0)) < 0.01 ? ' ✓ 与测算一致' : ' ✗ 与测算不一致,请检查动作' }}</div></div>
           </div>
           <div v-if="m.wrapped_spread_total > 0 && !['代开信用证', '开保函'].includes(m.purpose)" class="mt-3 border-t border-amber-200 pt-3 text-xs" style="font-variant-numeric: tabular-nums">
             <div class="font-bold text-amber-700 mb-1.5">包裹价差构成({{ current.wrapped_spread != null ? `${current.wrapped_spread.toLocaleString()} 万/台 × ${current.quantity} 台` : '未填写' }})</div>
@@ -361,7 +361,7 @@ onMounted(loadPlans)
               <div>包裹价差总额:<b>{{ money(m.wrapped_spread_total) }}</b></div>
               <div>− 上游居间定额(完成后给):<b>{{ money(m.supplier_fee_fixed) }}</b></div>
               <div>= 中间层包裹收益:<b class="text-amber-600">{{ money(m.middle_wrapped) }}</b></div>
-              <div>其中前置 {{ current.upfront_percent ?? '—' }}%:<b class="text-amber-600">{{ money(m.upfront_amount) }}</b><div class="text-muted">剩余 {{ money(m.upfront_remain) }} 完成后分配</div></div>
+              <div>其中前置 {{ current.upfront_percent ?? '—' }}%(按包裹价差总额):<b class="text-amber-600">{{ money(m.upfront_amount) }}</b><div class="text-muted">剩余 {{ money(m.upfront_remain) }} 完成后分配</div></div>
             </div>
           </div>
         </div>
@@ -381,7 +381,7 @@ onMounted(loadPlans)
           <div class="col-span-2 text-xs font-bold text-primary pt-1">包裹价差(万元,直接输入;拆分给上游居间与中间层)</div>
           <div><label :class="labelCls">上游包裹价差(万元/台,单台)</label><input v-model="form.wrapped_spread" type="number" :class="inputCls" placeholder="如 3" /></div>
           <div><label :class="labelCls">上游居间定额(万元,交易完成后给)</label><input v-model="form.supplier_fee_fixed" type="number" :class="inputCls" placeholder="如 30" /></div>
-          <div><label :class="labelCls">居间前置比例 %(通常 10-30)</label><input v-model="form.upfront_percent" type="number" :class="inputCls" placeholder="基于中间层包裹收益" /></div>
+          <div><label :class="labelCls">居间前置比例 %(通常 10-30)</label><input v-model="form.upfront_percent" type="number" :class="inputCls" placeholder="基于包裹价差总额" /></div>
           <template v-if="form.payment_mode.startsWith('信用证')">
             <div><label :class="labelCls">开证保证金比例 %</label><input v-model="form.lc_deposit_percent" type="number" :class="inputCls" placeholder="如 20" /></div>
             <div><label :class="labelCls">代开证费率 %(通常 1-3)</label><input v-model="form.lc_fee_percent" type="number" :class="inputCls" placeholder="如 1.5" /></div>
