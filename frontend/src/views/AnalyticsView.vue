@@ -81,12 +81,12 @@ function buildCharts(d: AnalyticsOverview) {
   // 货源结构环形
   render('goodsPie', {
     tooltip: { trigger: 'item' },
-    legend: { ...legendBase, bottom: 0, orient: 'horizontal', left: 'center' },
+    legend: { ...legendBase, bottom: 4, orient: 'horizontal', left: 'center' },
     series: [
       {
         type: 'pie',
-        radius: ['40%', '64%'],
-        center: ['50%', '47%'],
+        radius: ['36%', '58%'],
+        center: ['50%', '45%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: d.goods_structure.filter((g) => g.count > 0).map((g, i) => ({ name: g.type, value: g.count, itemStyle: { color: PALETTE[i % PALETTE.length] } })),
@@ -97,12 +97,12 @@ function buildCharts(d: AnalyticsOverview) {
   // 付款方式环形(金额)
   render('payPie', {
     tooltip: { trigger: 'item', valueFormatter: (v) => `${(v as number).toLocaleString()} 万` },
-    legend: { ...legendBase, bottom: 0, orient: 'horizontal', left: 'center' },
+    legend: { ...legendBase, bottom: 4, orient: 'horizontal', left: 'center' },
     series: [
       {
         type: 'pie',
-        radius: ['40%', '64%'],
-        center: ['50%', '47%'],
+        radius: ['36%', '58%'],
+        center: ['50%', '45%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: d.payment_mode_dist.filter((p) => p.amount > 0).map((p, i) => ({ name: p.mode, value: Math.round(p.amount), itemStyle: { color: PALETTE[i % PALETTE.length] } })),
@@ -143,12 +143,12 @@ function buildCharts(d: AnalyticsOverview) {
   // 验资状态环形
   render('verifyPie', {
     tooltip: { trigger: 'item' },
-    legend: { ...legendBase, bottom: 0, orient: 'horizontal', left: 'center' },
+    legend: { ...legendBase, bottom: 4, orient: 'horizontal', left: 'center' },
     series: [
       {
         type: 'pie',
-        radius: ['40%', '64%'],
-        center: ['50%', '47%'],
+        radius: ['36%', '58%'],
+        center: ['50%', '45%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: [
@@ -288,65 +288,65 @@ const actionMeta: Record<string, string> = { create: '创建', update: '更新',
 
     <!-- 图表行 1:成交趋势 + 新增趋势 -->
     <div class="grid grid-cols-3 gap-4 mb-4">
-      <div class="col-span-2 bg-white rounded-xl border border-line p-5">
+      <div class="col-span-2 bg-white rounded-xl border border-line p-5 flex flex-col">
         <div class="text-sm font-bold mb-2">近 12 个月成交金额趋势</div>
-        <div v-if="hasAmount" :ref="setRef('amountTrend')" class="h-[240px]"></div>
-        <div v-else :class="emptyCls" style="height: 240px">暂无成交数据</div>
+        <div v-if="hasAmount" :ref="setRef('amountTrend')" class="flex-1 min-h-[240px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 240px">暂无成交数据</div>
       </div>
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">近 12 个月新增主体</div>
-        <div v-if="hasTrend" :ref="setRef('newTrend')" class="h-[240px]"></div>
-        <div v-else :class="emptyCls" style="height: 240px">暂无新增主体</div>
+        <div v-if="hasTrend" :ref="setRef('newTrend')" class="flex-1 min-h-[240px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 240px">暂无新增主体</div>
       </div>
     </div>
 
     <!-- 图表行 2:货源结构 + 付款方式 + 配额时效 -->
     <div class="grid grid-cols-3 gap-4 mb-4">
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-2">货源结构(现货/准现货/期货)</div>
-        <div v-if="hasGoods" :ref="setRef('goodsPie')" class="h-[200px]"></div>
-        <div v-else :class="emptyCls" style="height: 200px">暂无供货方</div>
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-2 shrink-0">货源结构(现货/准现货/期货)</div>
+        <div v-if="hasGoods" :ref="setRef('goodsPie')" class="flex-1 min-h-[200px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 200px">暂无供货方</div>
       </div>
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-2">付款方式分布(按金额)</div>
-        <div v-if="hasPay" :ref="setRef('payPie')" class="h-[200px]"></div>
-        <div v-else :class="emptyCls" style="height: 200px">暂无订单</div>
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-2 shrink-0">付款方式分布(按金额)</div>
+        <div v-if="hasPay" :ref="setRef('payPie')" class="flex-1 min-h-[200px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 200px">暂无订单</div>
       </div>
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-2">配额时效分布(批次)</div>
-        <div v-if="hasAging" :ref="setRef('agingBar')" class="h-[200px]"></div>
-        <div v-else :class="emptyCls" style="height: 200px">暂无配额</div>
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-2 shrink-0">配额时效分布(批次)</div>
+        <div v-if="hasAging" :ref="setRef('agingBar')" class="flex-1 min-h-[200px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 200px">暂无配额</div>
       </div>
     </div>
 
     <!-- 图表行 3:配额按链路 + 验资 + 分级 -->
     <div class="grid grid-cols-3 gap-4 mb-4">
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-2">可用配额按海外链路方</div>
-        <div v-if="hasChains" :ref="setRef('chainBar')" class="h-[220px]"></div>
-        <div v-else :class="emptyCls" style="height: 220px">暂无链路配额</div>
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-2 shrink-0">可用配额按海外链路方</div>
+        <div v-if="hasChains" :ref="setRef('chainBar')" class="flex-1 min-h-[220px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 220px">暂无链路配额</div>
       </div>
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-2">客户验资状态</div>
-        <div v-if="hasVerify" :ref="setRef('verifyPie')" class="h-[200px]"></div>
-        <div v-else :class="emptyCls" style="height: 200px">暂无客户</div>
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-2 shrink-0">客户验资状态</div>
+        <div v-if="hasVerify" :ref="setRef('verifyPie')" class="flex-1 min-h-[200px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 200px">暂无客户</div>
       </div>
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-2">客户价值分级</div>
-        <div v-if="hasGrades" :ref="setRef('gradeBar')" class="h-[200px]"></div>
-        <div v-else :class="emptyCls" style="height: 200px">暂无分级数据</div>
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-2 shrink-0">客户价值分级</div>
+        <div v-if="hasGrades" :ref="setRef('gradeBar')" class="flex-1 min-h-[200px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 200px">暂无分级数据</div>
       </div>
     </div>
 
     <!-- 图表行 4:履约率 + 到期预警 + 动态 -->
     <div class="grid grid-cols-3 gap-4">
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-2">供货方履约率分布</div>
-        <div v-if="hasFulfill" :ref="setRef('fulfillBar')" class="h-[180px]"></div>
-        <div v-else :class="emptyCls" style="height: 180px">暂无供货方</div>
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-2 shrink-0">供货方履约率分布</div>
+        <div v-if="hasFulfill" :ref="setRef('fulfillBar')" class="flex-1 min-h-[180px]"></div>
+        <div v-else :class="emptyCls + ' flex-1'" style="min-height: 180px">暂无供货方</div>
       </div>
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-3">配额到期预警(7 天内)</div>
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-3 shrink-0">配额到期预警(7 天内)</div>
         <div v-if="!data.expiring_quotas.length" class="text-[13px] text-muted py-8 text-center">暂无即将到期的配额</div>
         <div v-for="q in data.expiring_quotas" :key="q.quota_id" class="border border-line rounded-lg p-3 mb-2">
           <div class="text-[13px] font-medium">{{ q.supplier }} · {{ q.batch_no || '#' + q.quota_id }}</div>
@@ -355,9 +355,9 @@ const actionMeta: Record<string, string> = { create: '创建', update: '更新',
           </div>
         </div>
       </div>
-      <div class="bg-white rounded-xl border border-line p-5">
-        <div class="text-sm font-bold mb-3">主体动态(最近操作)</div>
-        <div class="max-h-[240px] overflow-y-auto">
+      <div class="bg-white rounded-xl border border-line p-5 flex flex-col">
+        <div class="text-sm font-bold mb-3 shrink-0">主体动态(最近操作)</div>
+        <div class="max-h-[240px] overflow-y-auto flex-1">
           <div v-for="(d2, i) in data.dynamics" :key="i" class="border-b border-line last:border-0 py-2">
             <div class="flex items-center gap-2 text-xs">
               <span class="text-muted whitespace-nowrap">{{ fmt(d2.at) }}</span>
