@@ -18,6 +18,7 @@ class User(Base):
     phone: Mapped[str] = mapped_column(String(32), default="")
     email: Mapped[str] = mapped_column(String(128), default="")
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    must_change_password: Mapped[int] = mapped_column(Integer, default=0)  # 1=下次登录须改密(初设/重置后)
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

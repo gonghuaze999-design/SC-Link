@@ -5,6 +5,7 @@ from ..database import get_db
 from ..deps import get_current_user, require_admin
 from ..models import User
 from ..schemas import UserBrief, UserCreate, UserOut, UserUpdate
+from ..config import settings
 from ..security import hash_password
 from ..services.audit import write_audit
 
@@ -12,6 +13,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 VALID_ROLES = ("admin", "user")
 VALID_STATUSES = ("active", "disabled")
+
+
+@router.get("/initial-password")
+def initial_password(admin: User = Depends(require_admin)):
+    return {"initial_password": settings.default_user_password}
 
 
 @router.get("/options", response_model=list[UserBrief])
@@ -44,13 +50,15 @@ def create_user(
     if db.query(User).filter(User.username == body.username).first():
         raise HTTPException(status_code=400, detail="账号已存在")
 
+    init_pwd = body.password or settings.default_user_password
     user = User(
         username=body.username,
-        password_hash=hash_password(body.password),
+        password_hash=hash_password(init_pwd),
         display_name=body.display_name,
         role=body.role,
         phone=body.phone,
         email=body.email,
+        must_change_password=1,
     )
     db.add(user)
     db.flush()
@@ -62,7 +70,7 @@ def create_user(
         "user",
         str(user.id),
         new_value=body.model_dump(exclude={"password"}),
-        detail=f"创建账号 {body.username}({body.role})",
+        detail=f"创建账号 {body.username}({body.role}),初设密码统一,登录后须改密",
     )
     db.commit()
     db.refresh(user)
@@ -97,11 +105,10 @@ def update_user(
         "email": user.email,
     }
 
-    if "new_password" in changes:
-        new_pwd = changes.pop("new_password")
-        if new_pwd:
-            user.password_hash = hash_password(new_pwd)
-            write_audit(db, request, admin, "update", "user", str(user.id), detail="重置密码")
+    if changes.pop("reset_password", None):
+        user.password_hash = hash_password(settings.default_user_password)
+        user.must_change_password = 1
+        write_audit(db, request, admin, "update", "user", str(user.id), detail="重置为统一初设密码(登录后须改密)")
 
     if changes.pop("unlock", None):
         user.locked_until = None

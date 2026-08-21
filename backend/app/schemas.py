@@ -18,6 +18,7 @@ class UserOut(BaseModel):
     status: str
     phone: str
     email: str
+    must_change_password: bool
     last_login_at: datetime | None
     created_at: datetime
 
@@ -25,6 +26,7 @@ class UserOut(BaseModel):
 class TokenOut(BaseModel):
     access_token: str
     user: UserOut
+    must_change_password: bool
 
 
 class UserBrief(BaseModel):
@@ -44,7 +46,7 @@ class UserCreate(BaseModel):
     username: str = Field(min_length=2, max_length=64)
     display_name: str = Field(default="", max_length=64)
     role: str = "user"
-    password: str = Field(min_length=8, max_length=64)
+    password: str | None = Field(default=None, min_length=8, max_length=64)  # 不填则用统一初设密码
     phone: str = Field(default="", max_length=32)
     email: str = Field(default="", max_length=128)
 
@@ -55,7 +57,7 @@ class UserUpdate(BaseModel):
     status: str | None = None
     phone: str | None = None
     email: str | None = None
-    new_password: str | None = Field(default=None, min_length=8, max_length=64)
+    reset_password: bool | None = None  # 重置为统一初设密码(登录后强制改密)
     unlock: bool | None = None  # 管理员解锁账号(清除锁定与失败计数)
 
 

@@ -11,11 +11,12 @@ export const useAuthStore = defineStore('auth', {
     isAdmin: (s) => s.user?.role === 'admin',
   },
   actions: {
-    async login(username: string, password: string) {
+    async login(username: string, password: string): Promise<boolean> {
       const res = await apiLogin(username, password)
       this.token = res.access_token
       localStorage.setItem('sclink_token', res.access_token)
       this.user = res.user
+      return res.must_change_password
     },
     async loadMe() {
       if (!this.token) return

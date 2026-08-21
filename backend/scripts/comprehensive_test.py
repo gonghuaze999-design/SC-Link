@@ -274,6 +274,37 @@ def run_all(m):
         return r.status_code == 400, "非法角色被拒(400)"
     t(b7, "B.用户管理", "非法角色值被拒", "极限")
 
+    def b8():
+        # 统一初设密码开户 → 首次登录须改密 → 改密后标志清除
+        r = req("POST", "/users", admin, {"username": "m_user_init", "display_name": "初设流程", "role": "user"})
+        uid = r.json().get("id") if r.status_code == 201 else None
+        if uid is None:
+            return False, f"开户失败 HTTP {r.status_code}"
+        r2 = req("POST", "/auth/login", json_body={"username": "m_user_init", "password": "Sclink@123456"})
+        d2 = r2.json()
+        tok = d2.get("access_token", "")
+        ok1 = r2.status_code == 200 and d2.get("must_change_password") is True
+        # 强制改密
+        req("POST", "/auth/change-password", tok, {"old_password": "Sclink@123456", "new_password": "Init@2026"})
+        r3 = req("POST", "/auth/login", json_body={"username": "m_user_init", "password": "Init@2026"})
+        ok2 = r3.status_code == 200 and r3.json().get("must_change_password") is False
+        return ok1 and ok2, f"初设登录须改密={ok1},改密后标志清除={ok2}"
+    t(b8, "B.用户管理", "统一初设密码开户+首次登录强制改密", "一般用户")
+
+    def b9():
+        # 管理员重置为初设密码 → 用户登录再次强制改密
+        uid = [u for u in req("GET", "/users", admin).json() if u["username"] == "m_user_init"][0]["id"]
+        req("PATCH", f"/users/{uid}", admin, {"reset_password": True})
+        r = req("POST", "/auth/login", json_body={"username": "m_user_init", "password": "Sclink@123456"})
+        d = r.json()
+        return r.status_code == 200 and d.get("must_change_password") is True, f"重置后初设密码可登录且须改密={d.get('must_change_password')}"
+    t(b9, "B.用户管理", "管理员重置为初设密码(再次强制改密)", "管理员")
+
+    def b10():
+        r = req("GET", "/users/initial-password", admin)
+        return r.status_code == 200 and r.json().get("initial_password") == "Sclink@123456", f"初设密码接口 HTTP {r.status_code}"
+    t(b10, "B.用户管理", "初设密码配置接口(管理员)", "管理员")
+
     # ---- C. 主体管理(多角度) ----
     def c1():
         r = req("POST", "/suppliers", ta, {"name": f"{PREFIX}新供货方"})

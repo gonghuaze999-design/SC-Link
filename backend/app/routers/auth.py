@@ -65,7 +65,11 @@ def login(body: LoginRequest, request: Request, db: Session = Depends(get_db)):
     db.refresh(user)
 
     token = create_access_token(user.id, user.username, user.role)
-    return TokenOut(access_token=token, user=UserOut.model_validate(user))
+    return TokenOut(
+        access_token=token,
+        user=UserOut.model_validate(user),
+        must_change_password=bool(user.must_change_password),
+    )
 
 
 @router.get("/me", response_model=UserOut)
@@ -85,6 +89,7 @@ def change_password(
     if body.old_password == body.new_password:
         raise HTTPException(status_code=400, detail="新密码不能与原密码相同")
     user.password_hash = hash_password(body.new_password)
-    write_audit(db, request, user, "update", "user", str(user.id), detail="修改密码")
+    user.must_change_password = 0
+    write_audit(db, request, user, "update", "user", str(user.id), detail="自行修改密码(强制改密完成)")
     db.commit()
     return {"ok": True}

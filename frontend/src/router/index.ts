@@ -10,6 +10,11 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/change-password',
+      component: () => import('../views/ChangePasswordView.vue'),
+      meta: { title: '设置密码' },
+    },
+    {
       path: '/',
       component: () => import('../components/AppLayout.vue'),
       children: [
@@ -80,6 +85,9 @@ router.beforeEach((to) => {
   if (!auth.isLoggedIn && !to.meta.public) return '/login'
   if (to.meta.public && auth.isLoggedIn) return '/dashboard'
   if (to.meta.adminOnly && !auth.isAdmin) return '/dashboard'
+  // 初设/重置密码后强制先改密
+  if (auth.isLoggedIn && auth.user?.must_change_password && to.path !== '/change-password') return '/change-password'
+  if (auth.isLoggedIn && !auth.user?.must_change_password && to.path === '/change-password') return '/dashboard'
   return true
 })
 

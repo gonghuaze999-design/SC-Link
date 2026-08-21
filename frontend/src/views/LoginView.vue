@@ -20,8 +20,8 @@ async function submit() {
   loading.value = true
   error.value = ''
   try {
-    await auth.login(username.value, password.value)
-    router.push('/dashboard')
+    const res = await auth.login(username.value, password.value)
+    router.push(res ? '/change-password' : '/dashboard')
   } catch (e) {
     error.value = errMsg(e)
   } finally {

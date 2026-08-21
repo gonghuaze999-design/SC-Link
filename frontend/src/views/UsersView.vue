@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { createUser, listUsers, updateUser } from '../api/users'
+import { createUser, fetchInitialPassword, listUsers, updateUser } from '../api/users'
 import type { UserInfo } from '../api/auth'
 import { errMsg } from '../api/http'
 
@@ -18,36 +18,33 @@ async function load() {
     loading.value = false
   }
 }
-onMounted(load)
+onMounted(() => {
+  load()
+  loadInitialPassword()
+})
 
 const dialog = reactive({
   show: false,
   mode: 'create' as 'create' | 'edit',
   target: null as UserInfo | null,
 })
+const initialPassword = ref('')
+async function loadInitialPassword() {
+  initialPassword.value = await fetchInitialPassword().catch(() => '请查看后端配置')
+}
 const form = reactive({
   username: '',
   display_name: '',
   role: 'user',
-  password: '',
   phone: '',
   email: '',
-  new_password: '',
 })
 const formError = ref('')
 
 function openCreate() {
   dialog.mode = 'create'
   dialog.target = null
-  Object.assign(form, {
-    username: '',
-    display_name: '',
-    role: 'user',
-    password: '',
-    phone: '',
-    email: '',
-    new_password: '',
-  })
+  Object.assign(form, { username: '', display_name: '', role: 'user', phone: '', email: '' })
   formError.value = ''
   dialog.show = true
 }
@@ -59,10 +56,8 @@ function openEdit(u: UserInfo) {
     username: u.username,
     display_name: u.display_name,
     role: u.role,
-    password: '',
     phone: u.phone,
     email: u.email,
-    new_password: '',
   })
   formError.value = ''
   dialog.show = true
@@ -76,7 +71,6 @@ async function submit() {
         username: form.username,
         display_name: form.display_name,
         role: form.role,
-        password: form.password,
         phone: form.phone,
         email: form.email,
       })
@@ -86,13 +80,23 @@ async function submit() {
         role: form.role,
         phone: form.phone,
         email: form.email,
-        new_password: form.new_password || undefined,
       })
     }
     dialog.show = false
     load()
   } catch (e) {
     formError.value = errMsg(e)
+  }
+}
+
+async function resetToInitial(u: UserInfo) {
+  if (!window.confirm(`确认将「${u.username}」的密码重置为统一初设密码?用户下次登录将被要求重新设置密码。`)) return
+  try {
+    await updateUser(u.id, { reset_password: true })
+    alert('已重置为初设密码,请告知用户;其下次登录须自行改密')
+    load()
+  } catch (e) {
+    alert(errMsg(e))
   }
 }
 
@@ -173,6 +177,7 @@ function fmtTime(t: string | null) {
             <td class="px-5 py-3.5 text-muted">{{ fmtTime(u.last_login_at) }}</td>
             <td class="px-5 py-3.5 text-right whitespace-nowrap">
               <button class="text-[13px] text-primary hover:underline mr-3" @click="openEdit(u)">编辑</button>
+              <button class="text-[13px] text-amber-600 hover:underline mr-3" @click="resetToInitial(u)">重置密码</button>
               <button
                 class="text-[13px] hover:underline"
                 :class="u.status === 'active' ? 'text-red-500' : 'text-green-600'"
@@ -221,23 +226,11 @@ function fmtTime(t: string | null) {
               <option value="admin">管理员</option>
             </select>
           </div>
-          <div>
-            <label class="block text-[13px] text-muted mb-1.5">
-              {{ dialog.mode === 'create' ? '初始密码 *(至少 8 位)' : '重置密码(留空则不修改)' }}
-            </label>
-            <input
-              v-if="dialog.mode === 'create'"
-              v-model="form.password"
-              type="password"
-              class="w-full border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              v-else
-              v-model="form.new_password"
-              type="password"
-              placeholder="留空则不修改"
-              class="w-full border border-line rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
+          <div v-if="dialog.mode === 'create'" class="col-span-2">
+            <label class="block text-[13px] text-muted mb-1.5">初设密码(统一)</label>
+            <div class="bg-amber-50 border border-amber-200 rounded-lg px-3.5 py-2.5 text-sm text-amber-700">
+              统一初设密码:<b style="font-variant-numeric: tabular-nums">{{ initialPassword }}</b> · 用户首次登录须自行改密
+            </div>
           </div>
           <div>
             <label class="block text-[13px] text-muted mb-1.5">电话</label>

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     admin_username: str = "admin"
     admin_password: str = "Admin@2026"
+    default_user_password: str = "Sclink@123456"  # 统一初设密码:开户与管理员重置时使用
 
     max_login_attempts: int = 5
     lockout_minutes: int = 30

@@ -1,6 +1,11 @@
 import http from './http'
 import type { UserInfo } from './auth'
 
+export async function fetchInitialPassword() {
+  const { data } = await http.get('/users/initial-password')
+  return (data as { initial_password: string }).initial_password
+}
+
 export async function listUsers(keyword = '') {
   const { data } = await http.get('/users', { params: { keyword } })
   return data as UserInfo[]
@@ -10,7 +15,7 @@ export async function createUser(payload: {
   username: string
   display_name: string
   role: string
-  password: string
+  password?: string
   phone: string
   email: string
 }) {
@@ -26,7 +31,7 @@ export async function updateUser(
     status: string
     phone: string
     email: string
-    new_password: string
+    reset_password: boolean
   }>,
 ) {
   const { data } = await http.patch(`/users/${id}`, payload)
