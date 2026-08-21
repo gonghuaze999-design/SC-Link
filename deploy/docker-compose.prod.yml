@@ -1,0 +1,74 @@
+name: sc-link
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sc-link-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: sc_link
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - sclink_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/backend.Dockerfile
+    container_name: sc-link-api
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: sc_link
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      DEFAULT_USER_PASSWORD: ${DEFAULT_USER_PASSWORD}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: gemini-2.5-flash
+      FFMPEG_PATH: ffmpeg
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8100:8100"
+    volumes:
+      - sclink_uploads:/app/uploads
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/frontend.Dockerfile
+    container_name: sc-link-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "0.0.0.0:8090:80"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+volumes:
+  sclink_mysql_data:
+  sclink_uploads:

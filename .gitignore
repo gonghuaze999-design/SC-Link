@@ -26,3 +26,5 @@ logs/
 .vscode/
 .claude/
 backend/uploads/
+deploy/.env.prod
+deploy/.env
