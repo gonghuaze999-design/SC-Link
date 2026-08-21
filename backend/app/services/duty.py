@@ -164,8 +164,10 @@ def _ai_brief(user_name: str, data: dict) -> str:
     if not ai_enabled():
         return ""
     prompt = (
-        "你是供应链值班机器人。根据以下结构化数据,用 200 字以内生成一段中文值班简报:"
-        "①撮合建议(需求与供货方匹配亮点)②风险与到期提醒 ③陈旧信息提醒。直接输出正文。\n\n"
+        "你是供应链值班机器人。请根据以下结构化数据撰写一份正式的每日值班简报,"
+        "要求:①正式报告行文,措辞专业简洁,总长 200 字以内;"
+        "②按「一、撮合建议」「二、风险与到期提醒」「三、陈旧信息提醒」三个板块组织;"
+        "③严禁使用任何 Markdown 标记(如 **、#、-、*),数字与金额用中文表述。\n\n"
         f"用户:{user_name}\n数据:{data}"
     )
     try:
@@ -176,7 +178,63 @@ def _ai_brief(user_name: str, data: dict) -> str:
         return ""
 
 
-def run_duty_for_user(user: User) -> DutyReport:
+def _has_recent_updates(db, user: User, since) -> bool:
+    """自上次扫描以来是否有供需信息更新"""
+    from ..entities import Customer, Publication
+
+    s_owners, _ = visible_owner_ids(db, user, "supplier")
+    c_owners, _ = visible_owner_ids(db, user, "customer")
+    if user.role == "admin":
+        sup_q = db.query(Supplier)
+        cus_q = db.query(Customer)
+        pub_q = db.query(Publication)
+    else:
+        sup_q = db.query(Supplier).filter(Supplier.owner_id.in_(s_owners))
+        cus_q = db.query(Customer).filter(Customer.owner_id.in_(c_owners))
+        pub_q = db.query(Publication).filter((Publication.visibility == "public") | (Publication.user_id == user.id))
+    if sup_q.filter(Supplier.updated_at >= since).first():
+        return True
+    if cus_q.filter(Customer.updated_at >= since).first():
+        return True
+    if pub_q.filter(Publication.updated_at >= since).first():
+        return True
+    return False
+
+
+def _has_active_orders(db, user: User) -> bool:
+    orders_q = db.query(Order)
+    if user.role != "admin":
+        s_owners, _ = visible_owner_ids(db, user, "supplier")
+        orders_q = orders_q.filter(Order.owner_id.in_(s_owners))
+    return orders_q.filter(~Order.status.in_(["done", "closed"])).first() is not None
+
+
+def run_duty_for_user(user: User, skip_if_idle: bool = False) -> DutyReport:
+    db = SessionLocal()
+    try:
+        if skip_if_idle:
+            last = (
+                db.query(DutyReport)
+                .filter(DutyReport.user_id == user.id)
+                .order_by(DutyReport.id.desc())
+                .first()
+            )
+            since = last.created_at if last else datetime(2000, 1, 1)
+            has_update = _has_recent_updates(db, user, since)
+            has_orders = _has_active_orders(db, user)
+            if not has_update and not has_orders:
+                idle_report = DutyReport(
+                    user_id=user.id,
+                    content={"matches": [], "stale": [], "risks": [], "note": "今日无供需信息更新,亦无在途订单。每日自动扫描已正常执行。"},
+                    ai_text="",
+                )
+                db.add(idle_report)
+                db.commit()
+                db.refresh(idle_report)
+                return idle_report
+    finally:
+        db.close()
+
     data = scan_for_user(user)
     ai_text = _ai_brief(user.display_name or user.username, {
         "matches": data["matches"][:5],
@@ -205,7 +263,7 @@ def run_duty_all() -> int:
     count = 0
     for u in users:
         try:
-            report = run_duty_for_user(u)
+            report = run_duty_for_user(u, skip_if_idle=True)
             db = SessionLocal()
             try:
                 db.add(

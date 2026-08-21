@@ -64,6 +64,6 @@ def start_scheduler() -> None:
     sched = BackgroundScheduler(timezone="Asia/Shanghai")
     sched.add_job(refresh_quotas, "interval", hours=1, id="refresh_quotas", coalesce=True)
     sched.add_job(close_expired_publications, "interval", hours=1, id="close_pubs", coalesce=True)
-    sched.add_job(run_duty_job, "interval", hours=1, id="duty_robot", coalesce=True, max_instances=1)
+    sched.add_job(run_duty_job, "cron", hour=8, minute=30, id="duty_robot", coalesce=True, max_instances=1)
     sched.start()
     _scheduler = sched

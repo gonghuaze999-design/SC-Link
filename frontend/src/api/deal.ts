@@ -153,6 +153,7 @@ export interface DutyReport {
     matches: { demand: string; publication_id?: number; customer_id?: number; top: { name: string; score: number; avail: number }[] }[]
     stale: { type: string; name: string; days: number }[]
     risks: { type: string; detail: string }[]
+    note?: string
   }
   ai_text: string
   is_read: boolean

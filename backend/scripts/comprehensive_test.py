@@ -1015,7 +1015,8 @@ def run_all(m):
             time.sleep(2)
             r = req("POST", "/duty/run", ta)
             ai = r.json().get("report", {}).get("ai_text", "")
-        return len(ai) >= 20, f"AI 简报 {len(ai)} 字"
+        no_md = "**" not in ai and "\n#" not in ai
+        return len(ai) >= 20 and no_md, f"AI 简报 {len(ai)} 字,无Markdown={no_md}"
     t(l2, "L.机器人", "AI 值班简报生成", "一般用户")
 
     def l3():
