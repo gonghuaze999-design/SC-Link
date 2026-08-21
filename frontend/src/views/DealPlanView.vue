@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import html2canvas from 'html2canvas'
+import { toPng } from 'html-to-image'
 import {
   computePlan,
   createDealPlan,
@@ -255,9 +255,9 @@ async function exportPng() {
   if (!exportRef.value) return
   exporting.value = true
   try {
-    const canvas = await html2canvas(exportRef.value, { scale: 3, backgroundColor: '#ffffff' })
+    const dataUrl = await toPng(exportRef.value, { pixelRatio: 3, backgroundColor: '#ffffff', cacheBust: true })
     const a = document.createElement('a')
-    a.href = canvas.toDataURL('image/png')
+    a.href = dataUrl
     a.download = `${current.value?.title || '交易链路'}-${exportMode.value === 'full' ? '内部版' : '对外版'}.png`
     a.click()
   } catch (e) {
@@ -672,13 +672,32 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
   </div>
 </template>
 <style>
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  html, body {
+    height: auto;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .export-area, .export-area * {
+    visibility: visible;
+  }
+  .export-area {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 880px !important;
+    max-width: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 .export-area th,
 .export-area td {
   vertical-align: middle;
-}
-@media print {
-  body * { visibility: hidden; }
-  .export-area, .export-area * { visibility: visible; }
-  .export-area { position: fixed; left: 0; top: 0; width: 100%; border: none; }
 }
 </style>
