@@ -22,8 +22,13 @@ function setRef(key: string) {
 function render(key: string, option: echarts.EChartsOption) {
   const el = refs[key]
   if (!el) return
-  if (!charts[key]) charts[key] = echarts.init(el)
+  if (!charts[key]) {
+    charts[key] = echarts.init(el)
+    const ro = new ResizeObserver(() => charts[key]?.resize())
+    ro.observe(el)
+  }
   charts[key].setOption(option, true)
+  requestAnimationFrame(() => charts[key]?.resize())
 }
 
 const axisBase = {
@@ -107,7 +112,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 配额时效条形
   render('agingBar', {
-    grid: { left: 46, right: 14, top: 24, bottom: 28 },
+    grid: { left: 46, right: 14, top: 26, bottom: 30 },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: d.quota_aging.map((a) => a.bucket), ...axisBase },
     yAxis: { type: 'value', minInterval: 1, ...axisBase },
@@ -157,7 +162,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 客户分级柱
   render('gradeBar', {
-    grid: { left: 40, right: 14, top: 24, bottom: 28 },
+    grid: { left: 40, right: 14, top: 26, bottom: 30 },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: d.value_grade_dist.map((g) => `${g.grade} 级`), ...axisBase },
     yAxis: { type: 'value', minInterval: 1, ...axisBase },
@@ -172,7 +177,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 履约率分布
   render('fulfillBar', {
-    grid: { left: 46, right: 14, top: 24, bottom: 28 },
+    grid: { left: 46, right: 14, top: 26, bottom: 30 },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: d.fulfillment_dist.map((f) => f.bucket), ...axisBase },
     yAxis: { type: 'value', minInterval: 1, ...axisBase },
