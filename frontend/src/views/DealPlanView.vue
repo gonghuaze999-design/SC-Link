@@ -488,8 +488,8 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
     </div>
 
     <!-- 导出弹窗 -->
-    <div v-if="exportDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="exportDlg.show = false">
-      <div class="bg-white rounded-xl w-[960px] max-h-[92vh] overflow-y-auto shadow-2xl relative">
+    <div v-if="exportDlg.show" class="export-dlg-overlay fixed inset-0 bg-black/40 flex items-center justify-center z-50" @click.self="exportDlg.show = false">
+      <div class="export-dlg-box bg-white rounded-xl w-[960px] max-h-[92vh] overflow-y-auto shadow-2xl relative">
         <div class="sticky top-0 bg-white border-b border-line px-6 py-4 flex items-center rounded-t-xl z-10">
           <div>
             <div class="text-base font-bold">导出交易链路文档</div>
@@ -497,8 +497,8 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
           </div>
           <button class="ml-auto w-8 h-8 rounded-lg hover:bg-slate-100 text-lg text-muted" @click="exportDlg.show = false">×</button>
         </div>
-        <div class="px-6 py-4">
-          <div class="flex items-center gap-4 flex-wrap mb-4">
+        <div class="export-content px-6 py-4">
+          <div class="export-options-bar flex items-center gap-4 flex-wrap mb-4">
             <div class="flex gap-2">
               <button class="px-5 py-2.5 rounded-lg text-[13px] border transition" :class="exportMode === 'full' ? 'border-primary bg-blue-50 text-primary font-medium' : 'border-line text-muted'" @click="exportMode = 'full'">内部全量版</button>
               <button class="px-5 py-2.5 rounded-lg text-[13px] border transition" :class="exportMode === 'public' ? 'border-primary bg-blue-50 text-primary font-medium' : 'border-line text-muted'" @click="exportMode = 'public'">对上下游版(隐藏中间层信息)</button>
@@ -515,12 +515,12 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
           <div ref="exportRef" class="export-area mx-auto" style="width: 880px; background: #ffffff; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; line-height: 1.35;">
             <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); padding: 28px 36px; color: #fff;">
               <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
+                <div style="flex: 1; min-width: 0;">
                   <div style="font-size: 22px; font-weight: 700; letter-spacing: 1px; line-height: 1.25;">{{ current?.title }}</div>
                   <div style="font-size: 12px; color: #93A6C8; margin-top: 8px; line-height: 1.2;">SC-Link 供应链协同中台 · 交易链路确认文档 · {{ todayText }}</div>
                 </div>
-                <div style="text-align: right;">
-                  <div style="display: inline-flex; align-items: center; font-size: 12px; padding: 5px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.4); line-height: 1;">{{ exportMode === 'full' ? '内部全量版' : '对上下游版' }}</div>
+                <div style="text-align: right; flex-shrink: 0;">
+                  <div style="display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; font-size: 12px; padding: 5px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,.4); line-height: 1;">{{ exportMode === 'full' ? '内部全量版' : '对上下游版' }}</div>
                   <div style="font-size: 11px; color: #93A6C8; margin-top: 10px; line-height: 1.2;">编号:DL-{{ current?.id }} · 生成于 {{ todayText }}</div>
                 </div>
               </div>
@@ -679,21 +679,49 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
   }
   html, body {
     height: auto;
+    overflow: visible;
   }
   body * {
     visibility: hidden;
   }
-  .export-area, .export-area * {
+  /* 弹窗容器转正常文档流,让浏览器自动跨页分页,内容完整输出 */
+  .export-dlg-overlay {
     visibility: visible;
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    background: none !important;
+  }
+  .export-dlg-box {
+    visibility: visible;
+    position: static !important;
+    width: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+  .export-dlg-box > div:not(.export-content) {
+    display: none;
+  }
+  .export-content {
+    display: block;
+    padding: 0 !important;
+  }
+  .export-content .export-options-bar {
+    display: none !important;
   }
   .export-area {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 880px !important;
-    max-width: none !important;
+    visibility: visible;
+    width: 100% !important;
+    border: none !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+  .export-area * {
+    visibility: visible;
   }
 }
 .export-area th,
