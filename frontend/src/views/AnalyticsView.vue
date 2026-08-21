@@ -81,12 +81,12 @@ function buildCharts(d: AnalyticsOverview) {
   // 货源结构环形
   render('goodsPie', {
     tooltip: { trigger: 'item' },
-    legend: { ...legendBase, bottom: 4, orient: 'horizontal', left: 'center' },
+    legend: { textStyle: { color: '#64748B', fontSize: 11 }, itemWidth: 10, itemHeight: 10, bottom: 6, orient: 'horizontal', left: 'center' },
     series: [
       {
         type: 'pie',
-        radius: ['36%', '58%'],
-        center: ['50%', '45%'],
+        radius: ['32%', '54%'],
+        center: ['50%', '47%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: d.goods_structure.filter((g) => g.count > 0).map((g, i) => ({ name: g.type, value: g.count, itemStyle: { color: PALETTE[i % PALETTE.length] } })),
@@ -97,12 +97,12 @@ function buildCharts(d: AnalyticsOverview) {
   // 付款方式环形(金额)
   render('payPie', {
     tooltip: { trigger: 'item', valueFormatter: (v) => `${(v as number).toLocaleString()} 万` },
-    legend: { ...legendBase, bottom: 4, orient: 'horizontal', left: 'center' },
+    legend: { textStyle: { color: '#64748B', fontSize: 11 }, itemWidth: 10, itemHeight: 10, bottom: 6, orient: 'horizontal', left: 'center' },
     series: [
       {
         type: 'pie',
-        radius: ['36%', '58%'],
-        center: ['50%', '45%'],
+        radius: ['32%', '54%'],
+        center: ['50%', '47%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: d.payment_mode_dist.filter((p) => p.amount > 0).map((p, i) => ({ name: p.mode, value: Math.round(p.amount), itemStyle: { color: PALETTE[i % PALETTE.length] } })),
@@ -143,12 +143,12 @@ function buildCharts(d: AnalyticsOverview) {
   // 验资状态环形
   render('verifyPie', {
     tooltip: { trigger: 'item' },
-    legend: { ...legendBase, bottom: 4, orient: 'horizontal', left: 'center' },
+    legend: { textStyle: { color: '#64748B', fontSize: 11 }, itemWidth: 10, itemHeight: 10, bottom: 6, orient: 'horizontal', left: 'center' },
     series: [
       {
         type: 'pie',
-        radius: ['36%', '58%'],
-        center: ['50%', '45%'],
+        radius: ['32%', '54%'],
+        center: ['50%', '47%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: [
