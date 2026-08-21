@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
 import { fetchAnalytics, type AnalyticsOverview } from '../api/orders'
 import { errMsg } from '../api/http'
@@ -203,12 +203,19 @@ const emptyCls = 'flex items-center justify-center h-full text-[13px] text-muted
 async function load() {
   try {
     data.value = await fetchAnalytics()
+    // 等待 v-if 图表容器挂载后再初始化(否则 refs 为空,图表空白)
+    await nextTick()
     buildCharts(data.value)
   } catch (e) {
     alert(errMsg(e))
   }
 }
-onMounted(load)
+onMounted(() => {
+  load()
+  window.addEventListener('resize', () => {
+    Object.values(charts).forEach((c) => c.resize())
+  })
+})
 
 const money = (v: number) => {
   const n = Number(v) || 0
