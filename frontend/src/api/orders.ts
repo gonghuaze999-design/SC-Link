@@ -135,8 +135,22 @@ export interface AnalyticsOverview {
   verified_rate: number
   active_orders: number
   month_amount: number
+  funding_in_progress: number
+  breach_count: number
+  middle_held_total: number
+  middle_upfront_total: number
+  demand_coverage: { intent_qty: number; available_qty: number; rate: number | null }
+  payment_mode_dist: { mode: string; count: number; amount: number }[]
+  goods_structure: { type: string; count: number }[]
+  quota_by_line: { name: string; available: number }[]
+  quota_by_chain: { name: string; available: number }[]
+  quota_aging: { bucket: string; count: number }[]
+  verification_dist: { verified: number; unverified: number; pending: number }
+  value_grade_dist: { grade: string; count: number }[]
+  fulfillment_dist: { bucket: string; count: number }[]
   expiring_quotas: { quota_id: number; supplier: string; batch_no: string; end_at: string; remain: number }[]
   monthly_trend: { month: string; suppliers: number; customers: number }[]
+  amount_trend: { month: string; amount: number }[]
   dynamics: { username: string; action: string; entity_type: string; entity_id: string; detail: string; at: string }[]
 }
 

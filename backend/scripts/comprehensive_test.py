@@ -590,6 +590,27 @@ def run_all(m):
         return r.json()["month_amount"] >= 28400000, f"本月成交额 {r.json()['month_amount']:,.0f}"
     t(g4, "G.分析", "成交额统计", "管理员")
 
+    def g5():
+        # 深挖指标齐全
+        r = req("GET", "/analytics/overview", admin)
+        d = r.json()
+        ok = (
+            "funding_in_progress" in d
+            and "middle_held_total" in d
+            and "breach_count" in d
+            and "demand_coverage" in d
+            and "payment_mode_dist" in d
+            and "goods_structure" in d
+            and "quota_by_chain" in d
+            and "quota_aging" in d
+            and "verification_dist" in d
+            and "value_grade_dist" in d
+            and "fulfillment_dist" in d
+            and len(d.get("amount_trend", [])) == 12
+        )
+        return ok, f"在途资金={d.get('funding_in_progress')},截流合计={d.get('middle_held_total')},违约={d.get('breach_count')}"
+    t(g5, "G.分析", "深挖指标齐全(资金/配额/风险/供需)", "管理员")
+
     # ---- H. AI 功能 ----
     def h1():
         r = req("POST", "/publications/parse", ta, {"text": "求购 B300 期货 100 台,预算 1.3 亿,可接受国内信用证,四季度交货"})
