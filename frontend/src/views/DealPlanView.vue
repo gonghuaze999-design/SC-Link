@@ -281,16 +281,20 @@ async function exportPdf() {
       imgObj.onload = res
       imgObj.onerror = rej
     })
-    const mmPerPx = pageW / imgObj.width
-    const totalHmm = imgObj.height * mmPerPx
-    let y = 0
-    let first = true
-    while (y < totalHmm - 1) {
-      if (!first) pdf.addPage()
-      first = false
-      pdf.addImage(img, 'PNG', 0, -y, pageW, totalHmm)
-      y += pageH
+    // 整体等比缩放适配单页 A4 横向(留 8mm 边距),居中放置
+    const margin = 8
+    const availW = pageW - margin * 2
+    const availH = pageH - margin * 2
+    const ratio = imgObj.width / imgObj.height
+    let w = availW
+    let h = w / ratio
+    if (h > availH) {
+      h = availH
+      w = h * ratio
     }
+    const x = (pageW - w) / 2
+    const y = (pageH - h) / 2
+    pdf.addImage(img, 'PNG', x, y, w, h)
     pdf.save(`${current.value?.title || '交易链路'}-${exportMode.value === 'full' ? '内部版' : '对外版'}.pdf`)
   } catch (e) {
     alert('导出失败:' + errMsg(e))
