@@ -186,5 +186,4 @@ function fmt(t: string) {
         </div>
       </div>
     </div>
-  </div>
 </template>
