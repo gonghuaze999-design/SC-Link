@@ -5,6 +5,8 @@ import { useAuthStore } from '../stores/auth'
 import { changePassword } from '../api/auth'
 import { errMsg } from '../api/http'
 import AppLogo from './AppLogo.vue'
+import { toPng } from 'html-to-image'
+import { jsPDF } from 'jspdf'
 
 const route = useRoute()
 const router = useRouter()
@@ -57,6 +59,44 @@ const navGroups = computed<NavGroup[]>(() => [
 
 const pageTitle = computed(() => (route.meta.title as string) || 'SC-Link')
 const manualOpen = ref(false)
+const manualFrame = ref<HTMLIFrameElement | null>(null)
+const manualPdfBusy = ref(false)
+
+async function downloadManualPdf() {
+  const doc = manualFrame.value?.contentDocument
+  if (!doc || !doc.body) {
+    alert('手册尚未加载完成,请稍后再试')
+    return
+  }
+  manualPdfBusy.value = true
+  try {
+    const img = await toPng(doc.body, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true })
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageW = pdf.internal.pageSize.getWidth()
+    const pageH = pdf.internal.pageSize.getHeight()
+    const imgObj = new Image()
+    imgObj.src = img
+    await new Promise((res, rej) => {
+      imgObj.onload = res
+      imgObj.onerror = rej
+    })
+    const mmPerPx = pageW / imgObj.width
+    const totalHmm = imgObj.height * mmPerPx
+    let y = 0
+    let first = true
+    while (y < totalHmm - 1) {
+      if (!first) pdf.addPage()
+      first = false
+      pdf.addImage(img, 'PNG', 0, -y, pageW, totalHmm)
+      y += pageH
+    }
+    pdf.save('SC-Link操作手册.pdf')
+  } catch (e) {
+    alert('PDF 生成失败,请重试')
+  } finally {
+    manualPdfBusy.value = false
+  }
+}
 
 const showPwd = ref(false)
 const pwdForm = reactive({ old_password: '', new_password: '', confirm: '' })
@@ -216,10 +256,10 @@ function logout() {
       <div class="h-[56px] border-b border-line flex items-center gap-3 px-5 shrink-0 bg-white">
         <div class="text-base font-bold">SC-Link 操作手册</div>
         <span class="text-xs text-muted">图文并茂 · 随系统同步更新</span>
-        <a class="ml-auto px-4 py-2 rounded-lg text-[13px] border border-primary text-primary hover:bg-blue-50 transition" href="/操作手册.pdf" download="SC-Link操作手册.pdf">下载 PDF 版</a>
+        <button :disabled="manualPdfBusy" class="ml-auto px-4 py-2 rounded-lg text-[13px] border border-primary text-primary hover:bg-blue-50 disabled:opacity-60 transition" @click="downloadManualPdf">{{ manualPdfBusy ? '生成中…' : '下载 PDF 版' }}</button>
         <button class="w-8 h-8 rounded-lg hover:bg-slate-100 text-lg text-muted" @click="manualOpen = false">×</button>
       </div>
-      <iframe src="/操作手册.html" class="flex-1 w-full border-0" title="操作手册"></iframe>
+      <iframe ref="manualFrame" src="/操作手册.html" class="flex-1 w-full border-0" title="操作手册"></iframe>
     </div>
   </div>
 </template>
