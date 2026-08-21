@@ -38,7 +38,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 成交金额趋势(渐变面积)
   render('amountTrend', {
-    grid: { left: 52, right: 14, top: 26, bottom: 26 },
+    grid: { left: 52, right: 14, top: 30, bottom: 28 },
     tooltip: { trigger: 'axis', valueFormatter: (v) => `${(v as number).toLocaleString()} 万` },
     xAxis: { type: 'category', data: months, ...axisBase },
     yAxis: { type: 'value', ...axisBase, axisLabel: { color: TEXT, fontSize: 10, formatter: (v: number) => (v >= 10000 ? `${v / 10000}亿` : `${v}万`) } },
@@ -62,7 +62,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 新增主体(柱)
   render('newTrend', {
-    grid: { left: 40, right: 14, top: 34, bottom: 26 },
+    grid: { left: 40, right: 14, top: 38, bottom: 28 },
     tooltip: { trigger: 'axis' },
     legend: { ...legendBase, data: ['新增供货方', '新增客户'] },
     xAxis: { type: 'category', data: d.monthly_trend.map((m) => m.month.slice(5)), ...axisBase },
@@ -80,8 +80,8 @@ function buildCharts(d: AnalyticsOverview) {
     series: [
       {
         type: 'pie',
-        radius: ['42%', '68%'],
-        center: ['50%', '42%'],
+        radius: ['40%', '64%'],
+        center: ['50%', '47%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: d.goods_structure.filter((g) => g.count > 0).map((g, i) => ({ name: g.type, value: g.count, itemStyle: { color: PALETTE[i % PALETTE.length] } })),
@@ -96,8 +96,8 @@ function buildCharts(d: AnalyticsOverview) {
     series: [
       {
         type: 'pie',
-        radius: ['42%', '68%'],
-        center: ['50%', '42%'],
+        radius: ['40%', '64%'],
+        center: ['50%', '47%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: d.payment_mode_dist.filter((p) => p.amount > 0).map((p, i) => ({ name: p.mode, value: Math.round(p.amount), itemStyle: { color: PALETTE[i % PALETTE.length] } })),
@@ -107,7 +107,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 配额时效条形
   render('agingBar', {
-    grid: { left: 46, right: 14, top: 16, bottom: 26 },
+    grid: { left: 46, right: 14, top: 24, bottom: 28 },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: d.quota_aging.map((a) => a.bucket), ...axisBase },
     yAxis: { type: 'value', minInterval: 1, ...axisBase },
@@ -122,7 +122,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 配额按链路方横向条形
   render('chainBar', {
-    grid: { left: 96, right: 40, top: 10, bottom: 20 },
+    grid: { left: 96, right: 44, top: 18, bottom: 18 },
     tooltip: { trigger: 'axis', valueFormatter: (v) => `${(v as number).toLocaleString()} 台` },
     xAxis: { type: 'value', ...axisBase },
     yAxis: { type: 'category', data: d.quota_by_chain.map((c) => c.name).reverse(), ...axisBase, axisLabel: { color: '#64748B', fontSize: 10 } },
@@ -142,8 +142,8 @@ function buildCharts(d: AnalyticsOverview) {
     series: [
       {
         type: 'pie',
-        radius: ['42%', '68%'],
-        center: ['50%', '42%'],
+        radius: ['40%', '64%'],
+        center: ['50%', '47%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
         data: [
@@ -157,7 +157,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 客户分级柱
   render('gradeBar', {
-    grid: { left: 40, right: 14, top: 16, bottom: 26 },
+    grid: { left: 40, right: 14, top: 24, bottom: 28 },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: d.value_grade_dist.map((g) => `${g.grade} 级`), ...axisBase },
     yAxis: { type: 'value', minInterval: 1, ...axisBase },
@@ -172,7 +172,7 @@ function buildCharts(d: AnalyticsOverview) {
 
   // 履约率分布
   render('fulfillBar', {
-    grid: { left: 46, right: 14, top: 16, bottom: 26 },
+    grid: { left: 46, right: 14, top: 24, bottom: 28 },
     tooltip: { trigger: 'axis' },
     xAxis: { type: 'category', data: d.fulfillment_dist.map((f) => f.bucket), ...axisBase },
     yAxis: { type: 'value', minInterval: 1, ...axisBase },
