@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -146,8 +146,8 @@ def delete_chain(chain_id: int, request: Request, user: User = Depends(get_curre
 SUPPLIER_FIELDS = [
     "name", "short_name", "reg_location", "credit_code", "established_at", "registered_capital",
     "equity_structure", "contacts", "remark", "chain_id", "chain_role", "parent_supplier_id",
-    "procurement_modes", "goods_type", "price", "currency", "price_valid_until", "moq",
-    "delivery_cycle", "payment_terms", "invoice_type", "guarantee_type", "guarantee_ratio",
+    "procurement_modes", "goods_type", "price", "currency", "price_valid_until", "price_valid_days",
+    "moq", "delivery_cycle", "payment_terms", "invoice_type", "account_info", "guarantee_type", "guarantee_ratio",
     "guarantee_issuer", "guarantee_issuer_name", "guarantee_valid_until", "financing_capacity",
     "guarantee_notes", "coop_status", "deal_count", "deal_amount", "fulfillment_rate",
     "breach_count", "credit_rating", "risk_notes",
@@ -174,9 +174,19 @@ def list_suppliers(
     return q.order_by(Supplier.updated_at.desc()).all()
 
 
+def _apply_price_days(data: dict) -> dict:
+    """报价有效期天数 → 自动计算截止日期(填报日 = 今天);天数本身也保留存储"""
+    days = data.get("price_valid_days")
+    if days is not None and days > 0:
+        from datetime import timedelta
+
+        data["price_valid_until"] = date.today() + timedelta(days=days)
+    return data
+
+
 @router.post("/suppliers", response_model=SupplierOut, status_code=201)
 def create_supplier(body: SupplierIn, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    obj = Supplier(**body.model_dump(), owner_id=user.id, last_editor_id=user.id)
+    obj = Supplier(**_apply_price_days(body.model_dump()), owner_id=user.id, last_editor_id=user.id)
     db.add(obj)
     db.flush()
     write_audit(db, request, user, "create", "supplier", str(obj.id), new_value=body.model_dump(), detail=f"创建供货方 {body.name}")
@@ -201,6 +211,7 @@ def update_supplier(
     obj = _entity_or_404(db, Supplier, supplier_id, user, "supplier")
     changes = body.model_dump(exclude_unset=True)
     changes.pop("version", None)
+    changes = _apply_price_days(changes)
     old = _snapshot(obj, SUPPLIER_FIELDS)
     ok = conditional_update(db, Supplier, obj.id, body.version, changes, user.id)
     if not ok:
@@ -298,8 +309,8 @@ def delete_quota(quota_id: int, request: Request, user: User = Depends(get_curre
 # ================= 中间层 =================
 MIDDLE_FIELDS = [
     "name", "credit_code", "entity_nature", "layer_no", "reg_location", "registered_capital",
-    "contact_info", "purposes", "fee_rate", "settlement", "coop_status", "credit_rating",
-    "risk_notes", "remark",
+    "contact_info", "account_info", "invoice_detail", "purposes", "fee_rate", "settlement",
+    "coop_status", "credit_rating", "risk_notes", "remark",
 ]
 
 

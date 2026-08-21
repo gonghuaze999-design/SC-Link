@@ -158,7 +158,18 @@ const groups: { title: string; items: [string, unknown][] }[] = [
       ['成立时间', props.customer.established_at || '—'],
       ['注册资本', props.customer.registered_capital || '—'],
       ['行业', props.customer.industry || '—'],
-      ['开票信息', props.customer.invoice_info || '—'],
+
+    ],
+  },
+  {
+    title: '开票信息',
+    items: [
+      ['单位全称', props.customer.invoice_detail?.单位全称 || '—'],
+      ['开户行', props.customer.invoice_detail?.开户行 || '—'],
+      ['行号/账号', props.customer.invoice_detail?.账号 || '—'],
+      ['地址', props.customer.invoice_detail?.地址 || '—'],
+      ['联系人', props.customer.invoice_detail?.联系人 || '—'],
+      ['联系方式', props.customer.invoice_detail?.联系方式 || '—'],
     ],
   },
   {

@@ -40,6 +40,7 @@ function blank(): Record<string, any> {
   return {
     name: '', credit_code: '', reg_location: '', established_at: null, registered_capital: '',
     industry: '', contacts: [], remark: '', invoice_info: '',
+    invoice_detail: { 单位全称: '', 开户行: '', 账号: '', 地址: '', 联系人: '', 联系方式: '' },
     intent_modes: [], intent_products: [], intent_quantity: '', budget_range: '',
     expected_deal_at: null, goods_preference: '',
     customer_type: '', purpose: '', decision_chain: '', payment_habit: '',
@@ -114,7 +115,7 @@ function editorName(id: number | null) {
           <option value="yes">已验资</option>
           <option value="no">未验资</option>
         </select>
-        <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition" @click="load">搜索</button>
+        <button class="px-6 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition whitespace-nowrap shrink-0" @click="load">搜索</button>
         <button class="ml-auto px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white transition whitespace-nowrap shrink-0" @click="openCreate">+ 新增客户</button>
       </div>
       <table class="w-full text-sm">
@@ -169,7 +170,13 @@ function editorName(id: number | null) {
           <div><label :class="labelCls">行业</label><input v-model="form.industry" :class="inputCls" /></div>
           <div><label :class="labelCls">成立时间</label><input v-model="form.established_at" type="date" :class="inputCls" /></div>
           <div><label :class="labelCls">注册资本</label><input v-model="form.registered_capital" :class="inputCls" /></div>
-          <div class="col-span-2"><label :class="labelCls">开票信息</label><input v-model="form.invoice_info" :class="inputCls" /></div>
+          <div class="col-span-2 text-xs font-bold text-primary pt-2">开票信息(可逐步完善,留空可保存)</div>
+          <div><label :class="labelCls">单位全称</label><input v-model="form.invoice_detail.单位全称" :class="inputCls" /></div>
+          <div><label :class="labelCls">开户行全称</label><input v-model="form.invoice_detail.开户行" :class="inputCls" /></div>
+          <div><label :class="labelCls">行号/账号</label><input v-model="form.invoice_detail.账号" :class="inputCls" /></div>
+          <div><label :class="labelCls">地址</label><input v-model="form.invoice_detail.地址" :class="inputCls" /></div>
+          <div><label :class="labelCls">联系人</label><input v-model="form.invoice_detail.联系人" :class="inputCls" /></div>
+          <div><label :class="labelCls">联系方式</label><input v-model="form.invoice_detail.联系方式" :class="inputCls" /></div>
 
           <div class="col-span-2 text-[13px] font-bold text-primary pt-2">交易意向</div>
           <div>

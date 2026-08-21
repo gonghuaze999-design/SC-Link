@@ -160,9 +160,18 @@ const groups: { title: string; items: [string, unknown][] }[] = [
       ['期货/现货', props.supplier.goods_type],
       ['报价', props.supplier.price != null ? `${props.supplier.price.toLocaleString()} ${props.supplier.currency}` : '—'],
       ['报价有效期', props.supplier.price_valid_until || '—'],
+      ['发票类型', props.supplier.invoice_type || '专票'],
       ['起订量', props.supplier.moq || '—'],
       ['交货周期', props.supplier.delivery_cycle || '—'],
       ['付款节点', props.supplier.payment_terms || '—'],
+    ],
+  },
+  {
+    title: '账户信息(收款账户)',
+    items: [
+      ['户名', props.supplier.account_info?.户名 || '—'],
+      ['开户行', props.supplier.account_info?.开户行 || '—'],
+      ['账号', props.supplier.account_info?.账号 || '—'],
     ],
   },
   {

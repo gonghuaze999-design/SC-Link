@@ -23,7 +23,7 @@ router = APIRouter(tags=["customers"])
 
 CUSTOMER_FIELDS = [
     "name", "credit_code", "reg_location", "established_at", "registered_capital", "industry",
-    "contacts", "remark", "license_file", "account_info", "invoice_info", "intent_modes",
+    "contacts", "remark", "license_file", "account_info", "invoice_info", "invoice_detail", "intent_modes",
     "intent_products", "intent_quantity", "budget_range", "expected_deal_at", "goods_preference",
     "customer_type", "purpose", "decision_chain", "payment_habit", "risk_preference",
     "value_grade", "tags",

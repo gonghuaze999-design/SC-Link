@@ -58,11 +58,13 @@ class Supplier(Base):
     goods_type: Mapped[str] = mapped_column(String(16), default="现货")  # 期货/现货/准现货
     price: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     currency: Mapped[str] = mapped_column(String(8), default="CNY")
-    price_valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    price_valid_until: Mapped[date | None] = mapped_column(Date, nullable=True)  # 截止日(按填报日+有效期天数自动计算)
+    price_valid_days: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 报价有效期(天)
     moq: Mapped[str] = mapped_column(String(64), default="")
     delivery_cycle: Mapped[str] = mapped_column(String(64), default="")
     payment_terms: Mapped[str] = mapped_column(String(256), default="")
-    invoice_type: Mapped[str] = mapped_column(String(64), default="")
+    invoice_type: Mapped[str] = mapped_column(String(64), default="专票")  # 专票/普票,默认专票
+    account_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # 收款账户 {户名,开户行,账号}
     # 反向保障
     guarantee_type: Mapped[str] = mapped_column(String(32), default="")  # 保函/先开后开/无/其他
     guarantee_ratio: Mapped[str] = mapped_column(String(32), default="")
@@ -122,6 +124,7 @@ class Customer(Base):
     license_file: Mapped[str] = mapped_column(String(256), default="")
     account_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {户名,开户行,账号}
     invoice_info: Mapped[str] = mapped_column(String(256), default="")
+    invoice_detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # 开票信息六栏 {单位全称,开户行,账号,地址,联系人,联系方式}
     # 交易意向
     intent_modes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [预付款, 信用证-国内, 信用证-跨境]
     intent_products: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [{product_line_id, quantity}]
@@ -180,6 +183,8 @@ class MiddleLayer(Base):
     reg_location: Mapped[str] = mapped_column(String(128), default="")
     registered_capital: Mapped[str] = mapped_column(String(64), default="")
     contact_info: Mapped[str] = mapped_column(String(256), default="")
+    account_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # 账户信息
+    invoice_detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # 开票信息六栏
     purposes: Mapped[list | None] = mapped_column(JSON, nullable=True)  # [代开信用证,开保函,居间分账,意向金截流,其他]
     fee_rate: Mapped[str] = mapped_column(String(64), default="")
     settlement: Mapped[str] = mapped_column(String(128), default="")

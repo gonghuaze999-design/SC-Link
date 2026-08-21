@@ -42,6 +42,8 @@ function blank(): Record<string, any> {
     name: '', credit_code: '', entity_nature: '', layer_no: 1, reg_location: '',
     registered_capital: '', contact_info: '', purposes: [], fee_rate: '',
     settlement: '', coop_status: '意向', credit_rating: '', risk_notes: '', remark: '',
+    account_info: { 户名: '', 开户行: '', 账号: '' },
+    invoice_detail: { 单位全称: '', 开户行: '', 账号: '', 地址: '', 联系人: '', 联系方式: '' },
   }
 }
 function openCreate() {
@@ -98,7 +100,7 @@ function fmt(t: string | null) {
     <div class="bg-white rounded-xl border border-line">
       <div class="flex items-center gap-3 p-4 border-b border-line">
         <input v-model="keyword" :class="inputCls + ' w-56'" placeholder="搜索主体名称" @keyup.enter="load" />
-        <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition" @click="load">搜索</button>
+        <button class="px-6 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition whitespace-nowrap shrink-0" @click="load">搜索</button>
         <button class="ml-auto px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white transition whitespace-nowrap shrink-0" @click="openCreate">+ 新增中间层</button>
       </div>
       <table class="w-full text-sm">
@@ -164,6 +166,17 @@ function fmt(t: string | null) {
           </div>
           <div><label :class="labelCls">费率/分成比例</label><input v-model="form.fee_rate" :class="inputCls" /></div>
           <div><label :class="labelCls">结算方式</label><input v-model="form.settlement" :class="inputCls" /></div>
+          <div class="col-span-2 text-xs font-bold text-primary pt-1">账户信息</div>
+          <div><label :class="labelCls">户名</label><input v-model="form.account_info.户名" :class="inputCls" /></div>
+          <div><label :class="labelCls">开户行</label><input v-model="form.account_info.开户行" :class="inputCls" /></div>
+          <div class="col-span-2"><label :class="labelCls">账号</label><input v-model="form.account_info.账号" :class="inputCls" /></div>
+          <div class="col-span-2 text-xs font-bold text-primary pt-1">开票信息</div>
+          <div><label :class="labelCls">单位全称</label><input v-model="form.invoice_detail.单位全称" :class="inputCls" /></div>
+          <div><label :class="labelCls">开户行全称</label><input v-model="form.invoice_detail.开户行" :class="inputCls" /></div>
+          <div><label :class="labelCls">行号/账号</label><input v-model="form.invoice_detail.账号" :class="inputCls" /></div>
+          <div><label :class="labelCls">地址</label><input v-model="form.invoice_detail.地址" :class="inputCls" /></div>
+          <div><label :class="labelCls">联系人</label><input v-model="form.invoice_detail.联系人" :class="inputCls" /></div>
+          <div><label :class="labelCls">联系方式</label><input v-model="form.invoice_detail.联系方式" :class="inputCls" /></div>
           <div><label :class="labelCls">合作状态</label><select v-model="form.coop_status" :class="inputCls"><option v-for="c in ['意向', '洽谈中', '合作中', '暂停', '终止']" :key="c" :value="c">{{ c }}</option></select></div>
           <div><label :class="labelCls">信用评级</label><input v-model="form.credit_rating" :class="inputCls" /></div>
           <div class="col-span-2"><label :class="labelCls">风险备注</label><textarea v-model="form.risk_notes" :class="inputCls" rows="2"></textarea></div>

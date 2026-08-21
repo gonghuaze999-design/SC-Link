@@ -77,10 +77,12 @@ class SupplierOut(BaseModel):
     price: float | None
     currency: str
     price_valid_until: date | None
+    price_valid_days: int | None
     moq: str
     delivery_cycle: str
     payment_terms: str
     invoice_type: str
+    account_info: dict | None
     guarantee_type: str
     guarantee_ratio: str
     guarantee_issuer: str
@@ -120,10 +122,12 @@ class SupplierIn(BaseModel):
     price: float | None = None
     currency: str = "CNY"
     price_valid_until: date | None = None
+    price_valid_days: int | None = None
     moq: str = ""
     delivery_cycle: str = ""
     payment_terms: str = ""
-    invoice_type: str = ""
+    invoice_type: str = "专票"
+    account_info: dict | None = None
     guarantee_type: str = ""
     guarantee_ratio: str = ""
     guarantee_issuer: str = ""
@@ -203,6 +207,7 @@ class CustomerOut(BaseModel):
     license_file: str
     account_info: dict | None
     invoice_info: str
+    invoice_detail: dict | None
     intent_modes: list | None
     intent_products: list | None
     intent_quantity: str
@@ -235,6 +240,7 @@ class CustomerIn(BaseModel):
     license_file: str = ""
     account_info: dict | None = None
     invoice_info: str = ""
+    invoice_detail: dict | None = None
     intent_modes: list | None = None
     intent_products: list | None = None
     intent_quantity: str = ""
@@ -303,6 +309,8 @@ class MiddleOut(BaseModel):
     reg_location: str
     registered_capital: str
     contact_info: str
+    account_info: dict | None
+    invoice_detail: dict | None
     purposes: list | None
     fee_rate: str
     settlement: str
@@ -325,6 +333,8 @@ class MiddleIn(BaseModel):
     reg_location: str = ""
     registered_capital: str = ""
     contact_info: str = ""
+    account_info: dict | None = None
+    invoice_detail: dict | None = None
     purposes: list | None = None
     fee_rate: str = ""
     settlement: str = ""

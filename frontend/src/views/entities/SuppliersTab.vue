@@ -163,10 +163,10 @@ const labelCls = 'block text-[13px] text-muted mb-1.5'
           <option v-for="g in goodsTypes" :key="g" :value="g">{{ g }}</option>
         </select>
         <select v-model="chainFilter" :class="inputCls + ' w-44'" @change="load">
-          <option value="">全部链路方</option>
+          <option value="">全部海外链路方</option>
           <option v-for="c in chains" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
-        <button class="px-5 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition" @click="load">搜索</button>
+        <button class="px-6 py-2.5 rounded-lg text-[13px] border border-line text-muted hover:bg-slate-50 transition whitespace-nowrap shrink-0" @click="load">搜索</button>
         <button class="ml-auto px-5 py-2.5 rounded-lg text-[13px] bg-primary text-white transition whitespace-nowrap shrink-0" @click="openCreate">+ 新增供货方</button>
       </div>
       <table class="w-full text-sm">
@@ -259,11 +259,16 @@ const labelCls = 'block text-[13px] text-muted mb-1.5'
           <div><label :class="labelCls">期货/现货/准现货</label><select v-model="form.goods_type" :class="inputCls"><option v-for="g in goodsTypes" :key="g" :value="g">{{ g }}</option></select></div>
           <div><label :class="labelCls">报价(单价/整机价)</label><input v-model="form.price" type="number" :class="inputCls" /></div>
           <div><label :class="labelCls">币种</label><select v-model="form.currency" :class="inputCls"><option value="CNY">CNY 人民币</option><option value="USD">USD 美元</option><option value="HKD">HKD 港币</option></select></div>
-          <div><label :class="labelCls">报价有效期</label><input v-model="form.price_valid_until" type="date" :class="inputCls" /></div>
+          <div><label :class="labelCls">报价有效期(天,按填报日自动算截止日)</label><input v-model="form.price_valid_days" type="number" :class="inputCls" placeholder="如 30" /></div>
           <div><label :class="labelCls">起订量(MOQ)</label><input v-model="form.moq" :class="inputCls" /></div>
           <div><label :class="labelCls">交货周期</label><input v-model="form.delivery_cycle" :class="inputCls" /></div>
-          <div><label :class="labelCls">发票类型</label><input v-model="form.invoice_type" :class="inputCls" /></div>
+          <div><label :class="labelCls">发票类型</label><select v-model="form.invoice_type" :class="inputCls"><option value="专票">专票(专用发票)</option><option value="普票">普票</option></select></div>
           <div class="col-span-2"><label :class="labelCls">付款节点(定金比例/尾款节点)</label><input v-model="form.payment_terms" :class="inputCls" /></div>
+
+          <div class="col-span-2 text-xs font-bold text-primary pt-2">账户信息(收款账户)</div>
+          <div><label :class="labelCls">户名</label><input v-model="form.account_info.户名" :class="inputCls" /></div>
+          <div><label :class="labelCls">开户行</label><input v-model="form.account_info.开户行" :class="inputCls" /></div>
+          <div class="col-span-2"><label :class="labelCls">账号</label><input v-model="form.account_info.账号" :class="inputCls" /></div>
 
           <div class="col-span-2 text-[13px] font-bold text-primary pt-2">反向保障</div>
           <div><label :class="labelCls">保障措施</label><select v-model="form.guarantee_type" :class="inputCls"><option value="">未设置</option><option v-for="g in guaranteeTypes" :key="g" :value="g">{{ g }}</option></select></div>

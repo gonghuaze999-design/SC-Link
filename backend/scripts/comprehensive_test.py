@@ -379,6 +379,30 @@ def run_all(m):
         return r.status_code == 200, "沟通记录查询正常(append-only 列表)"
     t(c14, "C.主体", "沟通记录查询", "一般用户")
 
+    def c15():
+        # 报价有效期天数:填报日自动起算截止日
+        from datetime import timedelta
+
+        r = req("POST", "/suppliers", ta, {"name": f"{PREFIX}有效期测试方", "price_valid_days": 30})
+        sid = r.json().get("id") if r.status_code == 201 else None
+        if sid is None:
+            return False, f"创建失败 HTTP {r.status_code}"
+        sup = req("GET", f"/suppliers/{sid}", ta).json()
+        expect_until = (date.today() + timedelta(days=30)).isoformat()
+        return sup.get("price_valid_until") == expect_until and sup.get("price_valid_days") == 30, f"截止日={sup.get('price_valid_until')}(期望 {expect_until})"
+    t(c15, "C.主体", "报价有效期天数自动计算截止日", "一般用户")
+
+    def c16():
+        # 账户信息录入(上游供货方)
+        r = req("POST", "/suppliers", ta, {"name": f"{PREFIX}账户测试方", "account_info": {"户名": "测试收款户", "开户行": "某银行", "账号": "62220000"}, "invoice_type": "普票"})
+        sid = r.json().get("id") if r.status_code == 201 else None
+        if sid is None:
+            return False, f"创建失败 HTTP {r.status_code}"
+        sup = req("GET", f"/suppliers/{sid}", ta).json()
+        ok = sup.get("account_info", {}).get("户名") == "测试收款户" and sup.get("invoice_type") == "普票"
+        return ok, f"户名={sup.get('account_info', {}).get('户名')},发票={sup.get('invoice_type')}"
+    t(c16, "C.主体", "上游供货方账户信息与发票类型", "一般用户")
+
     # ---- D. 共享机制 ----
     def d1():
         r = req("POST", "/shares", ta, {"target_id": tc[0] if False else 1, "scopes": ["all"]})

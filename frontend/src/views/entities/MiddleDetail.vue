@@ -65,6 +65,25 @@ const groups: { title: string; items: [string, unknown][] }[] = [
     ],
   },
   {
+    title: '账户信息',
+    items: [
+      ['户名', props.middle.account_info?.户名 || '—'],
+      ['开户行', props.middle.account_info?.开户行 || '—'],
+      ['账号', props.middle.account_info?.账号 || '—'],
+    ],
+  },
+  {
+    title: '开票信息',
+    items: [
+      ['单位全称', props.middle.invoice_detail?.单位全称 || '—'],
+      ['开户行', props.middle.invoice_detail?.开户行 || '—'],
+      ['行号/账号', props.middle.invoice_detail?.账号 || '—'],
+      ['地址', props.middle.invoice_detail?.地址 || '—'],
+      ['联系人', props.middle.invoice_detail?.联系人 || '—'],
+      ['联系方式', props.middle.invoice_detail?.联系方式 || '—'],
+    ],
+  },
+  {
     title: '功能定位',
     items: [
       ['目的', (props.middle.purposes || []).join('、') || '—'],

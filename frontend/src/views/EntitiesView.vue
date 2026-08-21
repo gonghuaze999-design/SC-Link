@@ -6,12 +6,12 @@ import MiddlesTab from './entities/MiddlesTab.vue'
 import ChainsTab from './entities/ChainsTab.vue'
 
 const tabs = [
+  { key: 'chains', label: '海外链路方' },
   { key: 'suppliers', label: '上游供货方' },
   { key: 'customers', label: '下游客户' },
   { key: 'middles', label: '中间层' },
-  { key: 'chains', label: '海外链路方' },
 ]
-const active = ref('suppliers')
+const active = ref('chains')
 </script>
 
 <template>
@@ -27,9 +27,9 @@ const active = ref('suppliers')
         {{ t.label }}
       </button>
     </div>
-    <SuppliersTab v-if="active === 'suppliers'" />
+    <ChainsTab v-if="active === 'chains'" />
+    <SuppliersTab v-else-if="active === 'suppliers'" />
     <CustomersTab v-else-if="active === 'customers'" />
-    <MiddlesTab v-else-if="active === 'middles'" />
-    <ChainsTab v-else />
+    <MiddlesTab v-else />
   </div>
 </template>

@@ -64,10 +64,12 @@ export interface Supplier {
   price: number | null
   currency: string
   price_valid_until: string | null
+  price_valid_days: number | null
   moq: string
   delivery_cycle: string
   payment_terms: string
   invoice_type: string
+  account_info: Record<string, string> | null
   guarantee_type: string
   guarantee_ratio: string
   guarantee_issuer: string
@@ -152,6 +154,7 @@ export interface Customer {
   license_file: string
   account_info: Record<string, string> | null
   invoice_info: string
+  invoice_detail: Record<string, string> | null
   intent_modes: string[] | null
   intent_products: { product_line_id: number; quantity: string }[] | null
   intent_quantity: string
@@ -240,6 +243,8 @@ export interface Middle {
   reg_location: string
   registered_capital: string
   contact_info: string
+  account_info: Record<string, string> | null
+  invoice_detail: Record<string, string> | null
   purposes: string[] | null
   fee_rate: string
   settlement: string
