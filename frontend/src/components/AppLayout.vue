@@ -56,6 +56,7 @@ const navGroups = computed<NavGroup[]>(() => [
 ])
 
 const pageTitle = computed(() => (route.meta.title as string) || 'SC-Link')
+const manualOpen = ref(false)
 
 const showPwd = ref(false)
 const pwdForm = reactive({ old_password: '', new_password: '', confirm: '' })
@@ -200,6 +201,25 @@ function logout() {
           </button>
         </div>
       </div>
+    </div>
+    <!-- 使用手册入口 -->
+    <button
+      class="fixed bottom-5 left-5 z-40 flex items-center gap-2 bg-navy text-white text-[13px] px-4 py-2.5 rounded-full shadow-lg shadow-black/30 hover:bg-blue-900 transition"
+      title="打开操作手册"
+      @click="manualOpen = true"
+    >
+      <span class="w-4 h-4 rounded-sm border border-cyan-400 flex items-center justify-center text-[9px] text-cyan-400">?</span>
+      使用手册
+    </button>
+
+    <div v-if="manualOpen" class="fixed inset-0 z-50 flex flex-col bg-white">
+      <div class="h-[56px] border-b border-line flex items-center gap-3 px-5 shrink-0 bg-white">
+        <div class="text-base font-bold">SC-Link 操作手册</div>
+        <span class="text-xs text-muted">图文并茂 · 随系统同步更新</span>
+        <a class="ml-auto px-4 py-2 rounded-lg text-[13px] border border-primary text-primary hover:bg-blue-50 transition" href="/操作手册.pdf" download="SC-Link操作手册.pdf">下载 PDF 版</a>
+        <button class="w-8 h-8 rounded-lg hover:bg-slate-100 text-lg text-muted" @click="manualOpen = false">×</button>
+      </div>
+      <iframe src="/操作手册.html" class="flex-1 w-full border-0" title="操作手册"></iframe>
     </div>
   </div>
 </template>

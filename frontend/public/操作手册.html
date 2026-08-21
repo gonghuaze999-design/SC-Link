@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SC-Link 供应链协同中台 · 操作手册</title>
+<style>
+  :root{
+    --navy:#0F172A; --blue:#2563EB; --cyan:#06B6D4; --bg:#F5F7FB; --card:#FFFFFF;
+    --ink:#1E293B; --muted:#64748B; --line:#E2E8F0;
+    --green:#10B981; --amber:#F59E0B; --red:#EF4444; --purple:#8B5CF6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.8;font-size:15px;}
+  .page{max-width:920px;margin:0 auto;padding:0 20px 80px;}
+  .cover{background:linear-gradient(135deg,#0F172A,#1E3A8A);color:#fff;padding:60px 40px;border-radius:0 0 20px 20px;margin-bottom:36px;}
+  .cover h1{font-size:34px;font-weight:700;letter-spacing:1px;}
+  .cover .sub{color:#93A6C8;margin-top:12px;font-size:15px;}
+  .cover .meta{margin-top:24px;font-size:12.5px;color:#7E93B8;}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px 28px;margin-bottom:36px;}
+  .toc h2{font-size:15px;color:var(--muted);margin-bottom:12px;}
+  .toc-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;}
+  .toc-grid a{color:var(--ink);text-decoration:none;font-size:13.5px;padding:4px 0;border-bottom:1px dashed var(--line);}
+  .toc-grid a b{color:var(--blue);margin-right:8px;}
+
+  section{margin-bottom:44px;}
+  h2.sec{font-size:24px;font-weight:700;margin-bottom:6px;padding-left:14px;border-left:5px solid var(--blue);}
+  .sec-desc{color:var(--muted);font-size:13.5px;margin:4px 0 20px 19px;}
+  h3{font-size:17px;font-weight:700;margin:26px 0 10px;color:var(--navy);}
+  p{margin:8px 0;}
+  ul,ol{padding-left:26px;margin:8px 0;}
+  li{margin:5px 0;}
+  b{color:var(--navy);}
+  .tip{background:#F0F9FF;border-left:4px solid var(--cyan);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px;}
+  .warn{background:#FFFBEB;border-left:4px solid var(--amber);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px;}
+  .danger{background:#FEF2F2;border-left:4px solid var(--red);border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0;font-size:13.5px;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;background:#fff;}
+  th{background:var(--navy);color:#fff;text-align:left;padding:9px 12px;font-weight:600;white-space:nowrap;}
+  td{border-bottom:1px solid var(--line);padding:8px 12px;vertical-align:top;}
+  tr:nth-child(even) td{background:#FAFBFD;}
+
+  /* 界面示意图 */
+  .mock{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0;
+        box-shadow:0 6px 20px rgba(15,23,42,.06);font-size:11.5px;color:#334155;}
+  .mock-top{display:flex;align-items:center;gap:5px;padding:7px 12px;background:#F1F5F9;border-bottom:1px solid var(--line);}
+  .dot{width:7px;height:7px;border-radius:50%;background:#CBD5E1;display:inline-block;}
+  .mock-url{flex:1;background:#fff;border-radius:5px;font-size:9.5px;color:#94A3B8;padding:1.5px 10px;margin-left:4px;}
+  .mock-body{padding:13px;}
+  .mock-cap{text-align:center;color:var(--muted);font-size:12.5px;margin-top:6px;}
+  .m-btn{display:inline-block;background:var(--blue);color:#fff;border-radius:6px;padding:3.5px 12px;font-size:10.5px;}
+  .m-tag{display:inline-block;font-size:9px;border-radius:4px;padding:1px 7px;margin-left:4px;}
+  .tag-blue{background:#EFF6FF;color:var(--blue);} .tag-green{background:#ECFDF5;color:#059669;}
+  .tag-amber{background:#FFFBEB;color:#D97706;} .tag-red{background:#FEF2F2;color:#DC2626;} .tag-gray{background:#F1F5F9;color:#64748B;}
+  .m-row{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid #F1F5F9;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr;}.toc-grid{grid-template-columns:1fr;}}
+
+  .fig{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin:16px 0;}
+  .fig-cap{text-align:center;color:var(--muted);font-size:12.5px;margin-top:8px;}
+  svg text{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+  .kbd{display:inline-block;background:#F1F5F9;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;
+       padding:0 7px;font-size:12px;font-family:monospace;}
+  .step{display:flex;gap:12px;margin:10px 0;}
+  .step-n{min-width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;display:flex;
+          align-items:center;justify-content:center;font-weight:700;font-size:13px;margin-top:3px;}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:30px;}
+
+  @media print{
+    @page{size:A4;margin:14mm;}
+    body{background:#fff;}
+    .page{max-width:none;padding:0;}
+    section{page-break-inside:auto;}
+    .mock,.fig,table{page-break-inside:avoid;}
+    h2.sec{page-break-after:avoid;}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="cover">
+  <h1>SC-Link 供应链协同中台<br>操作手册</h1>
+  <div class="sub">B300 服务器供应链上下游协同管理系统 · 主体管理 / 供需匹配 / 成本收益 / 订单跟踪 / 智能分析</div>
+  <div class="meta">版本 v1.0 · 2026-08 · 适用角色:管理员 / 一般用户</div>
+</div>
+
+<div class="toc">
+  <h2>目 录</h2>
+  <div class="toc-grid">
+    <a href="#s1"><b>01</b>系统简介与登录</a>
+    <a href="#s2"><b>02</b>我的工作(首页)</a>
+    <a href="#s3"><b>03</b>主体管理</a>
+    <a href="#s4"><b>04</b>供需看板</a>
+    <a href="#s5"><b>05</b>匹配中心</a>
+    <a href="#s6"><b>06</b>成本收益</a>
+    <a href="#s7"><b>07</b>订单跟踪</a>
+    <a href="#s8"><b>08</b>分析中台</a>
+    <a href="#s9"><b>09</b>值班机器人</a>
+    <a href="#s10"><b>10</b>共享管理</a>
+    <a href="#s11"><b>11</b>用户管理与审计(管理员)</a>
+    <a href="#s12"><b>12</b>常见问题</a>
+  </div>
+</div>
+
+<!-- ================= 01 ================= -->
+<section id="s1">
+  <h2 class="sec">01 系统简介与登录</h2>
+  <div class="sec-desc">SC-Link 面向 3-5 人内部团队的供应链协同平台:先定义主体,再发布供需、自动匹配、测算成本收益、跟踪订单,全程留痕。</div>
+
+  <h3>1.1 首次登录(强制设置密码)</h3>
+  <p>管理员开户后,你的账号使用<b>统一初设密码</b>(向管理员索取)。首次登录成功后,系统会强制进入"设置密码"页:</p>
+  <div class="mock">
+    <div class="mock-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mock-url">设置您的登录密码</span></div>
+    <div class="mock-body">
+      <div class="m-row" style="border:none;color:#0F172A;font-weight:700;">首次登录(或密码重置后)须修改初设密码方可进入系统</div>
+      <div class="m-row">原密码(初设密码):<span style="border:1px solid var(--line);border-radius:6px;padding:3px 10px;color:#94A3B8;">请输入管理员发放的初设密码</span></div>
+      <div class="m-row">新密码(至少 8 位):<span style="border:1px solid var(--line);border-radius:6px;padding:3px 10px;color:#94A3B8;">设置新密码</span></div>
+      <div class="m-row">确认新密码:<span style="border:1px solid var(--line);border-radius:6px;padding:3px 10px;color:#94A3B8;">再次输入新密码</span></div>
+      <div class="m-row" style="border:none;justify-content:center;"><span class="m-btn">设置密码并进入系统</span></div>
+    </div>
+  </div>
+  <div class="mock-cap">图 1-1 首次登录强制改密</div>
+  <div class="tip">新密码要求:至少 8 位、不能与初设密码相同、两次输入一致。设置成功后自动进入「我的工作」。</div>
+
+  <h3>1.2 忘记密码</h3>
+  <div class="step"><div class="step-n">1</div><div>联系<b>管理员</b>;</div></div>
+  <div class="step"><div class="step-n">2</div><div>管理员在「用户管理」中对该账号点击<b>重置密码</b>,密码回到统一初设密码;</div></div>
+  <div class="step"><div class="step-n">3</div><div>你用初设密码登录,系统再次强制你设置新密码(同 1.1)。</div></div>
+  <div class="danger">连续 5 次输错密码,账号锁定 30 分钟。锁定期间请联系管理员在「用户管理」中<b>解锁</b>。</div>
+
+  <h3>1.3 界面布局</h3>
+  <div class="mock">
+    <div class="mock-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mock-url">SC-Link 主界面</span></div>
+    <div class="mock-body" style="display:flex;gap:10px;padding:0;">
+      <div style="width:150px;background:var(--navy);color:#93A6C8;padding:12px 0;text-align:center;border-radius:0 0 0 12px;font-size:10px;">
+        <div style="color:#fff;font-weight:700;font-size:11px;margin-bottom:10px;">SC-Link</div>
+        <div style="background:#1E3A8A;color:#fff;border-radius:5px;margin:0 8px;padding:5px 0;">我的工作</div>
+        <div style="padding:5px 0;">主体管理</div><div style="padding:5px 0;">供需看板</div>
+        <div style="padding:5px 0;">匹配中心</div><div style="padding:5px 0;">成本收益</div>
+        <div style="padding:5px 0;">订单跟踪</div><div style="padding:5px 0;">分析中台</div>
+        <div style="margin-top:10px;color:#64748B;font-size:9px;">智能助手</div>
+        <div style="padding:5px 0;">值班机器人</div>
+      </div>
+      <div style="flex:1;padding:12px;">
+        <div class="m-row" style="border:none;color:#0F172A;font-weight:700;justify-content:space-between;">我的工作<span style="color:#94A3B8;font-weight:400;font-size:10px;">管理员 · admin · 修改密码 · 退出登录</span></div>
+        <div style="border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:8px;color:#64748B;">你好,admin · 待审批 2 项 · 在途订单 3 单 · 到期提醒 1 条</div>
+        <div style="position:relative;margin-top:14px;color:#94A3B8;font-size:10px;text-align:center;">左下角有「使用手册」入口</div>
+      </div>
+    </div>
+  </div>
+  <div class="mock-cap">图 1-2 主界面:左侧导航 + 顶栏 + 内容区;左下角为使用手册入口</div>
+</section>
+
+<!-- ================= 02 ================= -->
+<section id="s2">
+  <h2 class="sec">02 我的工作(首页)</h2>
+  <div class="sec-desc">登录后落地页:一屏聚合"今天该干什么",不用逐菜单翻找。</div>
+  <div class="mock">
+    <div class="mock-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mock-url">我的工作</span></div>
+    <div class="mock-body">
+      <div class="m-row" style="border:none;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        <b style="font-size:12.5px;">你好,张三</b>
+        <span><span class="m-btn">+ 发布看板</span> <span class="m-btn">+ 录入订单</span> <span class="m-btn">+ 开始匹配</span> <span class="m-btn">+ 新增主体</span></span>
+      </div>
+      <div class="grid2" style="margin-top:10px;">
+        <div style="border:1px solid var(--line);border-radius:8px;padding:10px;">
+          <div style="font-weight:700;font-size:11.5px;color:var(--navy);">值班机器人今日简报 <span class="m-tag tag-red">1 未读</span></div>
+          <div style="color:#64748B;margin-top:4px;">一、撮合建议:求购 B300 现货 20 台与芯联国际匹配度 83%…</div>
+        </div>
+        <div style="border:1px solid #FCD34D;border-radius:8px;padding:10px;background:#FFFBEB;">
+          <div style="font-weight:700;font-size:11.5px;color:#B45309;">待审批:数据共享申请 1 项</div>
+          <div style="color:#92400E;font-size:10px;margin-top:4px;">李四 申请与你共享上游数据 · 去处理 →</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;border:1px solid var(--line);border-radius:8px;padding:10px;">
+        <div style="font-weight:700;font-size:11.5px;">我的在途订单(违约优先)</div>
+        <div class="m-row"><span class="m-tag tag-red">违约处理中</span>DD-2608-003 · 30 台 · 4,050 万 · 远洋国际 → 客户丙</div>
+        <div class="m-row"><span class="m-tag tag-green">已付款</span>DD-2608-002 · 5 台 · 690 万 · 速达贸易 → 客户乙</div>
+      </div>
+    </div>
+  </div>
+  <div class="mock-cap">图 2-1 我的工作:问候 + 快捷操作 + 简报 + 待审批 + 在途订单 + 到期提醒 + 陈旧信息</div>
+  <div class="tip">「陈旧信息」指超过 3 天未更新的需求/供货方/客户——及时更新档案,能让匹配和机器人建议更准确。</div>
+</section>
+
+<!-- ================= 03 ================= -->
+<section id="s3">
+  <h2 class="sec">03 主体管理</h2>
+  <div class="sec-desc">一切业务的前提:先把链路方、供货方、客户、中间层四类主体维护好。除名称外,所有字段均可留空、逐步补充。</div>
+
+  <h3>3.1 四个标签页(按业务顺序)</h3>
+  <div class="mock">
+    <div class="mock-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mock-url">主体管理</span></div>
+    <div class="mock-body">
+      <div class="m-row" style="border:none;gap:5px;">
+        <span class="m-btn" style="background:#fff;color:var(--blue);border:1px solid var(--blue);">海外链路方</span>
+        <span class="m-btn">上游供货方</span>
+        <span class="m-btn">下游客户</span>
+        <span class="m-btn">中间层</span>
+      </div>
+      <div class="m-row" style="margin-top:6px;color:#64748B;">海外链路方 = 货源总源头;同一链路方下可有多个国内供货方代表。</div>
+    </div>
+  </div>
+  <div class="mock-cap">图 3-1 主体管理顺序:链路方 → 上游 → 客户 → 中间层</div>
+
+  <h3>3.2 上游供货方(重点字段)</h3>
+  <table>
+    <tr><th style="width:120px">分组</th><th>字段与说明</th></tr>
+    <tr><td><b>链路归属</b></td><td>所属海外链路方(必选)、链路角色(一手/二手/居间代表)。一手 = 直接对接海外货源。</td></tr>
+    <tr><td><b>交易属性</b></td><td>采购方式(预付款/信用证-国内/信用证-跨境,可多选)、期货/现货/准现货、报价(万元/台)、<b>报价有效期(填天数,系统按填报日自动算截止日)</b>、起订量、交货周期、发票类型(专票/普票,默认专票)。</td></tr>
+    <tr><td><b>反向保障</b></td><td>保函/先开后开、保函比例、开具方(企业/银行/保险公司)、保障有效期、垫资能力。</td></tr>
+    <tr><td><b>批次配额</b></td><td>在供货方「详情」抽屉中维护:批次号、数量、产生时间、结束时间。状态自动流转(可用/锁定/用完/过期),到期前 7 天提醒。</td></tr>
+    <tr><td><b>账户信息</b></td><td>收款账户:户名/开户行/账号。</td></tr>
+    <tr><td><b>合作评价</b></td><td>合作状态、履约率、违约次数、内部信用评级——影响匹配评分。</td></tr>
+  </table>
+  <div class="warn">配额是匹配引擎的硬条件:无有效配额或数量不足的供货方,不会出现在匹配结果中。</div>
+
+  <h3>3.3 下游客户(重点字段)</h3>
+  <table>
+    <tr><th style="width:120px">分组</th><th>字段与说明</th></tr>
+    <tr><td><b>交易意向</b></td><td>意向采购方式、意向数量、预算区间、现货/期货偏好——匹配引擎的直接输入。</td></tr>
+    <tr><td><b>验资信息</b></td><td>四种验资方式可组合:视频验资(3 日内录制)、账户余额照片(体现日期,3 日内)、银行资信证明(1 个月内)、上级控股方担保证明。每种独立建档、自动算有效期、到期提醒。</td></tr>
+    <tr><td><b>客户画像</b></td><td>类型(终端/贸易商/国资平台)、采购用途、价值分级(A/B/C)、付款习惯、风险偏好、决策链。</td></tr>
+    <tr><td><b>开票信息</b></td><td>单位全称、开户行、行号/账号、地址、联系人、联系方式(六栏)。</td></tr>
+  </table>
+
+  <h3>3.4 验资材料上传与 AI 初审</h3>
+  <div class="step"><div class="step-n">1</div><div>客户详情 → 「验资材料」→ <b>+ 上传材料</b>,选择验资方式与材料文件(图片/PDF/视频,视频 ≤200MB);</div></div>
+  <div class="step"><div class="step-n">2</div><div>上传后点击「触发 AI 初审」:Gemini 自动识别金额、日期、户名,生成初审报告与疑点清单;</div></div>
+  <div class="step"><div class="step-n">3</div><div><b>人工终审</b>:通过 / 驳回(留痕)。材料到期前 7 天自动提醒重新验资。</div></div>
+  <div class="danger">验资材料(账户余额、资信证明)高度敏感:仅数据主人、共享范围内用户与管理员可见,下载全程留痕。</div>
+
+  <h3>3.5 中间层</h3>
+  <p>功能定位可多选:<b>代开信用证 / 开保函 / 居间分账 / 意向金截流</b>;同时维护账户信息与开票信息。中间层会随交易模式变化,<b>沟通记录务必留痕</b>。</p>
+
+  <h3>3.6 沟通记录(三类主体通用)</h3>
+  <p>主体详情抽屉内「+ 记录沟通」:时间、方式、参与人、内容、下一步计划、跟进时间。<b>只增不改</b>,本身就是审计证据。</p>
+</section>
+
+<!-- ================= 04 ================= -->
+<section id="s4">
+  <h2 class="sec">04 供需看板</h2>
+  <div class="sec-desc">发布采购需求与供货信息;默认全员可见,可设私密;到期自动关闭。</div>
+
+  <h3>4.1 发布(支持 AI 快速发布)</h3>
+  <div class="mock">
+    <div class="mock-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mock-url">供需看板 · 发布</span></div>
+    <div class="mock-body">
+      <div class="m-row" style="border:none;"><b>AI 快速发布(可选)</b> <span class="m-btn" style="font-size:9.5px;">AI 解析</span></div>
+      <div style="border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:#94A3B8;">如:求购 B300 现货 20 台,资金已备好可预付,预算 1350-1450 万,最好 9 月中旬前交货</div>
+      <div style="margin-top:6px;color:#059669;font-size:10px;">AI 解析完成:型号 B300 / 数量 20 台 / 预付款 / 现货 / 预算 1,350-1,450 万 → 已自动填入表单</div>
+    </div>
+  </div>
+  <div class="mock-cap">图 4-1 用一句自然语言发布,AI 自动填表(单位自动换算:万 → 元)</div>
+  <div class="step"><div class="step-n">1</div><div>点「+ 发布」,选类型(采购需求/供货信息)与可见范围(全员可见/仅自己可见);</div></div>
+  <div class="step"><div class="step-n">2</div><div>填写标题、型号、数量、价格区间、交易方式、有效期(3/7/14/30 天);</div></div>
+  <div class="step"><div class="step-n">3</div><div>发布后自动进入匹配;到期自动关闭(卡片标灰)。</div></div>
+  <div class="tip">公开的采购需求会被全员看到,并被值班机器人纳入每日扫描。</div>
+</section>
+
+<!-- ================= 05 ================= -->
+<section id="s5">
+  <h2 class="sec">05 匹配中心</h2>
+  <div class="sec-desc">上游 ↔ 下游自动匹配:硬条件过滤 → 加权评分 → 归属裁剪。</div>
+
+  <div class="fig">
+    <svg viewBox="0 0 900 300" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2563EB"/></marker></defs>
+      <rect x="20" y="20" width="240" height="64" rx="10" fill="#0F172A"/>
+      <text x="140" y="46" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="bold">选择需求来源</text>
+      <text x="140" y="66" text-anchor="middle" font-size="10.5" fill="#93A6C8">我的客户 / 我的需求发布</text>
+      <g stroke="#2563EB" stroke-width="1.6" fill="none" marker-end="url(#ar)"><path d="M260 52 L300 52"/></g>
+      <rect x="300" y="20" width="240" height="64" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="420" y="46" text-anchor="middle" font-size="12.5" fill="#1D4ED8" font-weight="bold">① 硬条件过滤</text>
+      <text x="420" y="66" text-anchor="middle" font-size="10.5" fill="#64748B">型号一致 · 配额有效且够量 · 方式兼容</text>
+      <g stroke="#2563EB" stroke-width="1.6" fill="none" marker-end="url(#ar)"><path d="M540 52 L580 52"/></g>
+      <rect x="580" y="20" width="240" height="64" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="700" y="46" text-anchor="middle" font-size="12.5" fill="#1D4ED8" font-weight="bold">② 加权评分</text>
+      <text x="700" y="66" text-anchor="middle" font-size="10.5" fill="#64748B">优先级30% 时间20% 价格25% 信用25%</text>
+      <g stroke="#2563EB" stroke-width="1.6" fill="none" marker-end="url(#ar)"><path d="M700 84 L700 118"/></g>
+      <rect x="580" y="118" width="240" height="64" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="700" y="144" text-anchor="middle" font-size="12.5" fill="#1D4ED8" font-weight="bold">③ 归属裁剪</text>
+      <text x="700" y="164" text-anchor="middle" font-size="10.5" fill="#64748B">自己的全量 / 他人的简要+维护人</text>
+      <g stroke="#2563EB" stroke-width="1.6" fill="none" marker-end="url(#ar)"><path d="M700 182 L700 216"/></g>
+      <rect x="580" y="216" width="240" height="56" rx="10" fill="#EFF6FF" stroke="#2563EB"/>
+      <text x="700" y="240" text-anchor="middle" font-size="12.5" fill="#1D4ED8" font-weight="bold">匹配结果(按匹配度排序)</text>
+      <text x="700" y="260" text-anchor="middle" font-size="10.5" fill="#64748B">可展开「为什么匹配」查看评分依据</text>
+      <g font-size="10.5" fill="#334155">
+        <text x="30" y="130">匹配度徽标:≥85 绿 / ≥70 蓝 / 其余灰</text>
+        <text x="30" y="152">「最佳匹配」为第一名</text>
+        <text x="30" y="174">他人数据可「申请查看详情」→ 维护人批准后解锁全量</text>
+        <text x="30" y="196">卡片上可直接设置该供货方的优先级(1-9)</text>
+        <text x="30" y="218">顶部黄色区为「待我审批的详情查看申请」</text>
+      </g>
+    </svg>
+    <div class="fig-cap">图 5-1 匹配流程:硬过滤 → 评分 → 归属裁剪</div>
+  </div>
+
+  <h3>5.1 优先级</h3>
+  <p>在供货方列表「优先级」列或匹配卡片上设置 1-9 级;<b>未设置时默认按最近更新时间排序</b>。优先级在匹配评分中权重最高(30%)。</p>
+</section>
+
+<!-- ================= 06 ================= -->
+<section id="s6">
+  <h2 class="sec">06 成本收益</h2>
+  <div class="sec-desc">把一笔撮合搭成「交易链路」:参与方节点 + 资金/保障动作流,自动测算各环节成本与收益。金额单位统一为万元(CNY)。</div>
+
+  <h3>6.1 搭建链路(三步)</h3>
+  <div class="step"><div class="step-n">1</div><div><b>新建方案</b>:名称、数量、上游真实供货价(万元/台)、下游单价(万元/台)、采购方式。若涉及居间,填「上游包裹价差(万元/台,单台)」「上游居间定额(万元)」「居间前置比例 %(通常 10-30)」;</div></div>
+  <div class="step"><div class="step-n">2</div><div><b>添加参与方</b>:客户(绿)/ 中间层(琥珀)/ 供货方(蓝),可多个中间层。中间层可选功能定位:<b>交易居间</b>(赚价差/截流/前置)或<b>代开信用证/开保函</b>(赚代开费用+收益,保证金为押金不计收益);</div></div>
+  <div class="step"><div class="step-n">3</div><div><b>编排动作流</b>:按先后次序添加动作(资金支付/保函/居间前置/开证/交付等),每笔定义方向、金额(固定或比例×基数),可增删排序。</div></div>
+
+  <h3>6.2 包裹价差模型(核心概念)</h3>
+  <div class="fig">
+    <svg viewBox="0 0 900 190" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="20" width="190" height="60" rx="10" fill="#EFF6FF" stroke="#2563EB"/>
+      <text x="115" y="44" text-anchor="middle" font-size="11.5" fill="#1D4ED8" font-weight="bold">上游包裹价差总额</text>
+      <text x="115" y="64" text-anchor="middle" font-size="10" fill="#64748B">单台价差 × 数量(如 3×20=60 万)</text>
+      <g stroke="#64748B" stroke-width="1.5" fill="none"><path d="M210 50 L240 50"/></g>
+      <rect x="240" y="20" width="200" height="60" rx="10" fill="#FFFBEB" stroke="#F59E0B"/>
+      <text x="340" y="44" text-anchor="middle" font-size="11.5" fill="#B45309" font-weight="bold">拆成两部分</text>
+      <text x="340" y="64" text-anchor="middle" font-size="10" fill="#92400E">上游居间定额 + 中间层包裹收益</text>
+      <g stroke="#64748B" stroke-width="1.5" fill="none"><path d="M440 40 L480 40"/><path d="M440 70 L480 70"/></g>
+      <rect x="480" y="12" width="190" height="52" rx="10" fill="#fff" stroke="#F59E0B"/>
+      <text x="575" y="34" text-anchor="middle" font-size="11.5" fill="#B45309" font-weight="bold">上游居间(定额)</text>
+      <text x="575" y="52" text-anchor="middle" font-size="10" fill="#64748B">交易完成后支付给上游</text>
+      <rect x="480" y="78" width="190" height="52" rx="10" fill="#FFFBEB" stroke="#F59E0B"/>
+      <text x="575" y="100" text-anchor="middle" font-size="11.5" fill="#B45309" font-weight="bold">中间层包裹收益</text>
+      <text x="575" y="118" text-anchor="middle" font-size="10" fill="#92400E">= 包裹价差 − 上游居间定额</text>
+      <g stroke="#64748B" stroke-width="1.5" fill="none"><path d="M670 104 L700 104"/></g>
+      <rect x="700" y="78" width="180" height="52" rx="10" fill="#F0FDF4" stroke="#10B981"/>
+      <text x="790" y="100" text-anchor="middle" font-size="11.5" fill="#047857" font-weight="bold">居间前置</text>
+      <text x="790" y="118" text-anchor="middle" font-size="10" fill="#065F46">= 包裹价差总额 × 前置比例</text>
+      <text x="790" y="150" text-anchor="middle" font-size="10" fill="#64748B">由上游提前返给中间层</text>
+    </svg>
+    <div class="fig-cap">图 6-1 包裹价差构成:前置 = 包裹价差总额 × 比例(不是扣除定额后的余额)</div>
+  </div>
+
+  <h3>6.3 测算卡片:中间层收益三要点</h3>
+  <div class="mock">
+    <div class="mock-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mock-url">测算结果</span></div>
+    <div class="mock-body">
+      <div style="border:2px solid #F59E0B;border-radius:10px;padding:11px;background:#FFFBEB;">
+        <div style="font-weight:700;color:#B45309;font-size:12px;">通道方 · 中间层收益三要点</div>
+        <div class="grid2" style="margin-top:6px;font-size:11px;">
+          <div>① 上下游价差:<b style="color:#B45309;">120 万</b></div>
+          <div>② 截流资金峰值:<b style="color:#B45309;">1,716 万</b><div style="color:#94A3B8;font-size:9.5px;">时点余额(动作结清后) 0 万</div></div>
+          <div>③ 居间前置:<b style="color:#B45309;">12 万</b><div style="color:#059669;font-size:9.5px;">动作列表已编排入账 12 万 ✓ 与测算一致</div></div>
+        </div>
+        <div style="border-top:1px solid #FDE68A;margin-top:7px;padding-top:6px;font-size:10.5px;color:#92400E;">
+          包裹价差构成:3 万/台 × 20 台 = 60 万 − 上游居间 30 万 = 中间层收益 30 万;前置 20%(按总额) 12 万,剩余 18 万完成后分配
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mock-cap">图 6-2 中间层收益卡(交易居间定位)</div>
+
+  <h3>6.4 导出(双版本)</h3>
+  <table>
+    <tr><th style="width:140px">版本</th><th>内容</th></tr>
+    <tr><td><b>内部全量版</b></td><td>交易概要(含上下游单价)、参与方、履约次序、客户资金计划、交付保障、中间层收益测算——正式文档版式,含三方确认栏。</td></tr>
+    <tr><td><b>对上下游版</b></td><td>自动隐藏:中间层收益、中间层与上游的资金往来、上下游单价与价差。保留客户资金计划(每期金额)与交付/保函安排——可直接发给交易对手确认链路。</td></tr>
+  </table>
+  <p>导出 PNG 高清图或单页 A4 PDF(等比缩放);可选「隐藏全部金额」。</p>
+</section>
+
+<!-- ================= 07 ================= -->
+<section id="s7">
+  <h2 class="sec">07 订单跟踪</h2>
+  <div class="sec-desc">从协议签订到交付完成的全生命周期跟踪,违约独立分支。</div>
+
+  <h3>7.1 状态流转(事件自动推进)</h3>
+  <div class="fig">
+    <svg viewBox="0 0 900 250" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#94A3B8"/></marker></defs>
+      <g font-size="10.5">
+        <rect x="10" y="40" width="100" height="50" rx="8" fill="#0F172A"/><text x="60" y="60" text-anchor="middle" fill="#fff" font-weight="bold">已录入</text><text x="60" y="78" text-anchor="middle" fill="#93A6C8">协议建档</text>
+        <rect x="128" y="40" width="100" height="50" rx="8" fill="#fff" stroke="#2563EB"/><text x="178" y="60" text-anchor="middle" fill="#1D4ED8" font-weight="bold">货源确认中</text><text x="178" y="78" text-anchor="middle" fill="#64748B">货源事件①</text>
+        <rect x="246" y="40" width="100" height="50" rx="8" fill="#fff" stroke="#2563EB"/><text x="296" y="60" text-anchor="middle" fill="#1D4ED8" font-weight="bold">货源已确认</text><text x="296" y="78" text-anchor="middle" fill="#64748B">货源事件②</text>
+        <rect x="364" y="40" width="100" height="50" rx="8" fill="#fff" stroke="#2563EB"/><text x="414" y="60" text-anchor="middle" fill="#1D4ED8" font-weight="bold">付款中</text><text x="414" y="78" text-anchor="middle" fill="#64748B">资金事件</text>
+        <rect x="482" y="40" width="100" height="50" rx="8" fill="#fff" stroke="#2563EB"/><text x="532" y="60" text-anchor="middle" fill="#1D4ED8" font-weight="bold">已付款</text><text x="532" y="78" text-anchor="middle" fill="#64748B">资金事件</text>
+        <rect x="600" y="40" width="100" height="50" rx="8" fill="#fff" stroke="#2563EB"/><text x="650" y="60" text-anchor="middle" fill="#1D4ED8" font-weight="bold">到货</text><text x="650" y="78" text-anchor="middle" fill="#64748B">到货事件</text>
+        <rect x="718" y="40" width="100" height="50" rx="8" fill="#fff" stroke="#2563EB"/><text x="768" y="60" text-anchor="middle" fill="#1D4ED8" font-weight="bold">已交付</text><text x="768" y="78" text-anchor="middle" fill="#64748B">交付事件</text>
+        <rect x="836" y="40" width="54" height="50" rx="8" fill="#ECFDF5" stroke="#10B981"/><text x="863" y="66" text-anchor="middle" fill="#047857" font-weight="bold">完成</text>
+      </g>
+      <g stroke="#94A3B8" stroke-width="1.5" fill="none" marker-end="url(#ar2)">
+        <path d="M110 65 L128 65"/><path d="M228 65 L246 65"/><path d="M346 65 L364 65"/>
+        <path d="M464 65 L482 65"/><path d="M582 65 L600 65"/><path d="M700 65 L718 65"/><path d="M818 65 L836 65"/>
+      </g>
+      <text x="450" y="20" text-anchor="middle" font-size="11.5" fill="#64748B">上传跟踪事件(货源/资金/到货/交付)自动推进对应节点;也可用「推进下一环节」按钮手动调整</text>
+      <g stroke="#EF4444" stroke-width="1.5" fill="none" marker-end="url(#ar3)"><path d="M455 90 L455 130"/></g>
+      <defs><marker id="ar3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#EF4444"/></marker></defs>
+      <rect x="330" y="130" width="120" height="46" rx="8" fill="#FEF2F2" stroke="#EF4444"/>
+      <text x="390" y="150" text-anchor="middle" font-size="11" fill="#B91C1C" font-weight="bold">违约</text>
+      <text x="390" y="167" text-anchor="middle" font-size="9.5" fill="#7F1D1D">违约事件自动进入</text>
+      <g stroke="#94A3B8" stroke-width="1.5" fill="none" marker-end="url(#ar2)"><path d="M450 153 L490 153"/></g>
+      <rect x="490" y="130" width="130" height="46" rx="8" fill="#FEF2F2" stroke="#EF4444"/>
+      <text x="555" y="150" text-anchor="middle" font-size="11" fill="#B91C1C" font-weight="bold">违约处理中</text>
+      <text x="555" y="167" text-anchor="middle" font-size="9.5" fill="#7F1D1D">补充违约事项</text>
+      <g stroke="#10B981" stroke-width="1.5" fill="none" marker-end="url(#ar4)"><path d="M620 153 L670 153"/></g>
+      <defs><marker id="ar4" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#10B981"/></marker></defs>
+      <rect x="670" y="130" width="200" height="46" rx="8" fill="#F0FDF4" stroke="#10B981"/>
+      <text x="770" y="150" text-anchor="middle" font-size="11" fill="#047857" font-weight="bold">违约已解决</text>
+      <text x="770" y="167" text-anchor="middle" font-size="9.5" fill="#065F46">自动回到违约前环节继续推进</text>
+    </svg>
+    <div class="fig-cap">图 7-1 订单状态机:跟踪事件自动推进;违约解决后自动回到原环节</div>
+  </div>
+
+  <h3>7.2 跟单 AI</h3>
+  <ul>
+    <li><b>AI 订单摘要</b>:一键生成当前进度、资金、风险与下一步建议;</li>
+    <li><b>AI 从沟通记录提取</b>:粘贴微信/邮件内容 → 自动提取跟踪事件草稿(分类/标题/内容/建议下一步),逐条确认保存。</li>
+  </ul>
+
+  <h3>7.3 合同文件(全生命周期)</h3>
+  <p>订单详情内「合同文件」区:上传<b>模版 / 定稿扫描件 / 补充协议 / 其他</b>,上传人、时间全程留痕,可下载、删除(留痕)。</p>
+
+  <h3>7.4 订单搜索</h3>
+  <p>支持模糊搜索:<b>订单号、协议号、供货方名称/简称、客户名称</b>;列表按创建时间倒序,最新在上。</p>
+</section>
+
+<!-- ================= 08 ================= -->
+<section id="s8">
+  <h2 class="sec">08 分析中台</h2>
+  <div class="sec-desc">全局数据洞察,按你的权限范围(含共享)实时计算。</div>
+  <table>
+    <tr><th style="width:180px">板块</th><th>指标</th></tr>
+    <tr><td><b>KPI(八卡)</b></td><td>上游供货方、下游客户(验资率)、在途订单、本月成交额、<b>在途资金敞口、中间层截流峰值合计、需求覆盖率、违约订单</b>。</td></tr>
+    <tr><td><b>趋势</b></td><td>近 12 月成交金额(面积图)、新增主体(双柱)。</td></tr>
+    <tr><td><b>货源</b></td><td>货源结构(现货/准现货/期货)、配额按海外链路方、配额时效分布(红=已过期/琥珀=7天内)。</td></tr>
+    <tr><td><b>客户与信用</b></td><td>付款方式分布(按金额)、验资状态、客户价值分级、供货方履约率分布。</td></tr>
+    <tr><td><b>预警与动态</b></td><td>配额 7 天到期清单、主体操作动态。</td></tr>
+  </table>
+  <div class="tip">「需求覆盖率」= 可见可用配额 ÷ 客户意向数量:大于 100% 表示货源能覆盖需求,低于 100% 需补货源。</div>
+</section>
+
+<!-- ================= 09 ================= -->
+<section id="s9">
+  <h2 class="sec">09 值班机器人</h2>
+  <div class="sec-desc">每日 08:30 自动扫描你的权限范围(含共享授权范围),生成撮合建议与提醒。</div>
+  <ul>
+    <li><b>撮合建议</b>:每条需求 × 供货方匹配 Top3(匹配度 + 可用配额);</li>
+    <li><b>陈旧信息提醒</b>:超过 3 天未更新的需求与供货方信息;</li>
+    <li><b>风险与到期提醒</b>:配额/验资 7 天内到期、违约订单;</li>
+    <li><b>AI 值班简报</b>:正式报告行文(一、撮合建议 / 二、风险与到期提醒 / 三、陈旧信息提醒);</li>
+    <li><b>扫描凭证</b>:当天无更新且无在途订单时,生成一条绿色凭证"每日自动扫描已正常执行",证明任务在跑;</li>
+    <li><b>手动触发</b>:随时点「立即扫描一次」;历史简报点击可查看全文。</li>
+  </ul>
+</section>
+
+<!-- ================= 10 ================= -->
+<section id="s10">
+  <h2 class="sec">10 共享管理</h2>
+  <div class="sec-desc">默认各人数据相互隔离;经申请-审批后,共享范围内互相可见、共同维护。</div>
+  <div class="fig">
+    <svg viewBox="0 0 900 170" width="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ar5" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2563EB"/></marker></defs>
+      <rect x="20" y="50" width="200" height="70" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="120" y="78" text-anchor="middle" font-size="12" fill="#1D4ED8" font-weight="bold">用户 A(申请人)</text>
+      <text x="120" y="100" text-anchor="middle" font-size="10" fill="#64748B">选择对象 + 共享范围</text>
+      <g stroke="#2563EB" stroke-width="1.6" fill="none" marker-end="url(#ar5)"><path d="M220 85 L330 85"/></g>
+      <text x="275" y="74" text-anchor="middle" font-size="10" fill="#1D4ED8">申请(范围:全部/上游/下游/中间层)</text>
+      <rect x="330" y="50" width="200" height="70" rx="10" fill="#fff" stroke="#2563EB"/>
+      <text x="430" y="78" text-anchor="middle" font-size="12" fill="#1D4ED8" font-weight="bold">用户 B(审批人)</text>
+      <text x="430" y="100" text-anchor="middle" font-size="10" fill="#64748B">站内通知 → 批准 / 拒绝</text>
+      <g stroke="#10B981" stroke-width="1.6" fill="none" marker-end="url(#ar6)"><path d="M530 85 L640 85"/></g>
+      <defs><marker id="ar6" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#10B981"/></marker></defs>
+      <rect x="640" y="50" width="240" height="70" rx="10" fill="#F0FDF4" stroke="#10B981"/>
+      <text x="760" y="78" text-anchor="middle" font-size="12" fill="#047857" font-weight="bold">共享生效</text>
+      <text x="760" y="100" text-anchor="middle" font-size="10" fill="#065F46">互相可见 · 共同维护 · 留痕标注维护人</text>
+    </svg>
+    <div class="fig-cap">图 10-1 共享流程:申请 → 审批 → 生效;任一方可解除(对方确认)</div>
+  </div>
+  <ul>
+    <li>共享后编辑同一记录有<b>乐观锁保护</b>:他人已更新时,你会收到"数据已被他人更新"提示,合并后再保存;</li>
+    <li>每条共享数据标注「最后维护人 + 时间」;申请/批准/解除全程审计;</li>
+    <li>管理员无需申请,天然全局可见。</li>
+  </ul>
+</section>
+
+<!-- ================= 11 ================= -->
+<section id="s11">
+  <h2 class="sec">11 用户管理与审计(管理员)</h2>
+  <h3>11.1 用户管理</h3>
+  <ul>
+    <li><b>开户</b>:新建账号(账号/姓名/角色/电话/邮箱),密码为<b>统一初设密码</b>,用户首次登录强制改密;</li>
+    <li><b>重置密码</b>:一键回到初设密码,用户下次登录再次强制改密;</li>
+    <li><b>停用/启用</b>:停用后无法登录(已登录的令牌立即失效);</li>
+    <li><b>解锁</b>:登录锁定(5 次失败)后由管理员解锁;</li>
+    <li>密码重置、解锁、停用等<b>不影响用户的任何业务数据</b>(数据按用户 id 关联,id 不变)。</li>
+  </ul>
+  <h3>11.2 审计日志</h3>
+  <p>操作日志:谁、何时、对什么对象、做了什么,含<b>改前值/改后值</b>差异对比;登录日志:成功/失败/锁定。日志<b>只增不改</b>,管理员亦不可删除。</p>
+</section>
+
+<!-- ================= 12 ================= -->
+<section id="s12">
+  <h2 class="sec">12 常见问题</h2>
+  <table>
+    <tr><th style="width:230px">问题</th><th>解答</th></tr>
+    <tr><td>登录提示"账号已锁定"?</td><td>连续 5 次密码错误锁定 30 分钟;请联系管理员在「用户管理」解锁,或等待自动解锁。</td></tr>
+    <tr><td>匹配结果里没有某家供货方?</td><td>检查:合作状态是否为"暂停/终止";是否有有效配额且数量足够;采购方式是否兼容。被过滤的原因会列在匹配页"被硬性条件过滤"区。</td></tr>
+    <tr><td>别人的数据我只能看到简要信息?</td><td>归属裁剪机制:申请查看详情并经对方批准后可见全量;或与对方建立数据共享。</td></tr>
+    <tr><td>配额显示"过期"了?</td><td>批次配额的结束时间已过,系统自动流转状态;在供货方详情中编辑配额时间或新增批次。</td></tr>
+    <tr><td>验资材料过期了?</td><td>余额照片/视频 3 日、资信证明 1 个月有效;到期前 7 天提醒,请重新上传验资。</td></tr>
+    <tr><td>金额单位是什么?</td><td>全平台金额单位为<b>万元(CNY)</b>;报价/配额有效期按填报日自动起算。</td></tr>
+    <tr><td>居间前置怎么算?</td><td>前置 = <b>包裹价差总额 × 前置比例</b>(如 60 万 × 20% = 12 万),由上游提前返给中间层;剩余部分交易完成后分配。</td></tr>
+    <tr><td>订单节点为什么自动跳了?</td><td>上传跟踪事件会按分类自动推进节点(货源/资金/到货/交付),违约事件自动进入违约分支;也可手动调整。</td></tr>
+  </table>
+</section>
+
+<footer>SC-Link 供应链协同中台 · 操作手册 v1.0 · 本手册随系统同步更新 · 平台左下角随时调出</footer>
+</div>
+</body>
+</html>
