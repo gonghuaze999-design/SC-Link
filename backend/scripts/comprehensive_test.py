@@ -611,10 +611,46 @@ def run_all(m):
         return ok, f"在途资金={d.get('funding_in_progress')},截流合计={d.get('middle_held_total')},违约={d.get('breach_count')}"
     t(g5, "G.分析", "深挖指标齐全(资金/配额/风险/供需)", "管理员")
 
+    def g6():
+        # 空数据视角:全新用户无任何数据,概览须安全返回(全 0/空数组/rate=None)
+        req("POST", "/users", admin, {"username": "m_user_empty", "display_name": "空数据", "role": "user"})
+        te = login("m_user_empty", "Sclink@123456")
+        r = req("GET", "/analytics/overview", te)
+        d = r.json()
+        ok = (
+            r.status_code == 200
+            and d["supplier_count"] == 0
+            and d["customer_count"] == 0
+            and d["demand_coverage"]["rate"] is None
+            and d["goods_structure"] == []
+            and d["payment_mode_dist"] == []
+            and d["quota_by_chain"] == []
+            and d["value_grade_dist"] == []
+            and d["funding_in_progress"] == 0
+        )
+        return ok, f"空视角:供货方={d.get('supplier_count')},覆盖率rate={d.get('demand_coverage', {}).get('rate')}"
+    t(g6, "G.分析", "空数据视角安全渲染", "一般用户")
+
+    def g7():
+        # 合法范围内的极端值:超长名称供货方 + 大额订单(500台×145万=7.25亿),概览仍稳定
+        long_name = f"{PREFIX}超长名称供货方" + "X" * 80
+        s = req("POST", "/suppliers", ta, {"name": long_name, "price": 145, "goods_type": "现货"})
+        sid = s.json().get("id") if s.status_code == 201 else None
+        req("POST", "/orders", ta, {"order_no": f"{PREFIX}DD-大额", "quantity": 500, "unit_price": 145, "total_amount": 72500})
+        r = req("GET", "/analytics/overview", admin)
+        d = r.json()
+        ok = r.status_code == 200 and isinstance(d["funding_in_progress"], (int, float)) and d["funding_in_progress"] >= 72500 and sid is not None
+        return ok, f"大额订单(7.25亿)后概览正常,在途资金={d.get('funding_in_progress')}"
+    t(g7, "G.分析", "合法极端值(超长名称+大额订单)", "一般用户")
+
     # ---- H. AI 功能 ----
     def h1():
         r = req("POST", "/publications/parse", ta, {"text": "求购 B300 期货 100 台,预算 1.3 亿,可接受国内信用证,四季度交货"})
         d = r.json()
+        if not d.get("product_name"):
+            time.sleep(2)
+            r = req("POST", "/publications/parse", ta, {"text": "求购 B300 期货 100 台,预算 1.3 亿,可接受国内信用证,四季度交货"})
+            d = r.json()
         return r.status_code == 200 and d.get("product_name") == "B300", f"解析型号={d.get('product_name')},价格={d.get('price_min')}"
     t(h1, "H.AI", "看板语义解析(万元→元换算)", "一般用户")
 

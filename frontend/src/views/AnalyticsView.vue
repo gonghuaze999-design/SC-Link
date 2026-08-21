@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import * as echarts from 'echarts'
 import { fetchAnalytics, type AnalyticsOverview } from '../api/orders'
 import { errMsg } from '../api/http'
@@ -84,7 +84,7 @@ function buildCharts(d: AnalyticsOverview) {
         center: ['50%', '42%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
-        data: d.goods_structure.map((g, i) => ({ name: g.type, value: g.count, itemStyle: { color: PALETTE[i % PALETTE.length] } })),
+        data: d.goods_structure.filter((g) => g.count > 0).map((g, i) => ({ name: g.type, value: g.count, itemStyle: { color: PALETTE[i % PALETTE.length] } })),
       },
     ],
   })
@@ -100,7 +100,7 @@ function buildCharts(d: AnalyticsOverview) {
         center: ['50%', '42%'],
         itemStyle: { borderColor: '#fff', borderWidth: 2 },
         label: { show: false },
-        data: d.payment_mode_dist.map((p, i) => ({ name: p.mode, value: Math.round(p.amount), itemStyle: { color: PALETTE[i % PALETTE.length] } })),
+        data: d.payment_mode_dist.filter((p) => p.amount > 0).map((p, i) => ({ name: p.mode, value: Math.round(p.amount), itemStyle: { color: PALETTE[i % PALETTE.length] } })),
       },
     ],
   })
@@ -186,6 +186,20 @@ function buildCharts(d: AnalyticsOverview) {
   })
 }
 
+const hasAmount = computed(() => (data.value?.amount_trend ?? []).some((m) => m.amount > 0))
+const hasGoods = computed(() => (data.value?.goods_structure ?? []).some((g) => g.count > 0))
+const hasPay = computed(() => (data.value?.payment_mode_dist ?? []).some((p) => p.amount > 0))
+const hasAging = computed(() => (data.value?.quota_aging ?? []).some((a) => a.count > 0))
+const hasChains = computed(() => (data.value?.quota_by_chain ?? []).some((c) => c.available > 0))
+const hasVerify = computed(() => {
+  const v = data.value?.verification_dist
+  return !!v && v.verified + v.pending + v.unverified > 0
+})
+const hasGrades = computed(() => (data.value?.value_grade_dist ?? []).some((g) => g.count > 0))
+const hasFulfill = computed(() => (data.value?.fulfillment_dist ?? []).some((f) => f.count > 0))
+const hasTrend = computed(() => (data.value?.monthly_trend ?? []).some((m) => m.suppliers > 0 || m.customers > 0))
+const emptyCls = 'flex items-center justify-center h-full text-[13px] text-muted'
+
 async function load() {
   try {
     data.value = await fetchAnalytics()
@@ -197,9 +211,12 @@ async function load() {
 onMounted(load)
 
 const money = (v: number) => {
-  if (v >= 100000) return `${(v / 10000).toFixed(0)} 亿`
-  if (v >= 10000) return `${(v / 10000).toFixed(0)} 万`
-  return `${v.toLocaleString()} 万`
+  const n = Number(v) || 0
+  if (n >= 10000) {
+    const yi = (n / 10000).toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+    return `${yi} 亿`
+  }
+  return `${n.toLocaleString(undefined, { maximumFractionDigits: 2 })} 万`
 }
 function fmt(t: string) {
   return t ? t.replace('T', ' ').slice(0, 16) : '—'
@@ -261,11 +278,13 @@ const actionMeta: Record<string, string> = { create: '创建', update: '更新',
     <div class="grid grid-cols-3 gap-4 mb-4">
       <div class="col-span-2 bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">近 12 个月成交金额趋势</div>
-        <div :ref="setRef('amountTrend')" class="h-[240px]"></div>
+        <div v-if="hasAmount" :ref="setRef('amountTrend')" class="h-[240px]"></div>
+        <div v-else :class="emptyCls" style="height: 240px">暂无成交数据</div>
       </div>
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">近 12 个月新增主体</div>
-        <div :ref="setRef('newTrend')" class="h-[240px]"></div>
+        <div v-if="hasTrend" :ref="setRef('newTrend')" class="h-[240px]"></div>
+        <div v-else :class="emptyCls" style="height: 240px">暂无新增主体</div>
       </div>
     </div>
 
@@ -273,15 +292,18 @@ const actionMeta: Record<string, string> = { create: '创建', update: '更新',
     <div class="grid grid-cols-3 gap-4 mb-4">
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">货源结构(现货/准现货/期货)</div>
-        <div :ref="setRef('goodsPie')" class="h-[200px]"></div>
+        <div v-if="hasGoods" :ref="setRef('goodsPie')" class="h-[200px]"></div>
+        <div v-else :class="emptyCls" style="height: 200px">暂无供货方</div>
       </div>
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">付款方式分布(按金额)</div>
-        <div :ref="setRef('payPie')" class="h-[200px]"></div>
+        <div v-if="hasPay" :ref="setRef('payPie')" class="h-[200px]"></div>
+        <div v-else :class="emptyCls" style="height: 200px">暂无订单</div>
       </div>
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">配额时效分布(批次)</div>
-        <div :ref="setRef('agingBar')" class="h-[200px]"></div>
+        <div v-if="hasAging" :ref="setRef('agingBar')" class="h-[200px]"></div>
+        <div v-else :class="emptyCls" style="height: 200px">暂无配额</div>
       </div>
     </div>
 
@@ -289,15 +311,18 @@ const actionMeta: Record<string, string> = { create: '创建', update: '更新',
     <div class="grid grid-cols-3 gap-4 mb-4">
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">可用配额按海外链路方</div>
-        <div :ref="setRef('chainBar')" class="h-[220px]"></div>
+        <div v-if="hasChains" :ref="setRef('chainBar')" class="h-[220px]"></div>
+        <div v-else :class="emptyCls" style="height: 220px">暂无链路配额</div>
       </div>
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">客户验资状态</div>
-        <div :ref="setRef('verifyPie')" class="h-[200px]"></div>
+        <div v-if="hasVerify" :ref="setRef('verifyPie')" class="h-[200px]"></div>
+        <div v-else :class="emptyCls" style="height: 200px">暂无客户</div>
       </div>
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">客户价值分级</div>
-        <div :ref="setRef('gradeBar')" class="h-[200px]"></div>
+        <div v-if="hasGrades" :ref="setRef('gradeBar')" class="h-[200px]"></div>
+        <div v-else :class="emptyCls" style="height: 200px">暂无分级数据</div>
       </div>
     </div>
 
@@ -305,7 +330,8 @@ const actionMeta: Record<string, string> = { create: '创建', update: '更新',
     <div class="grid grid-cols-3 gap-4">
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-2">供货方履约率分布</div>
-        <div :ref="setRef('fulfillBar')" class="h-[180px]"></div>
+        <div v-if="hasFulfill" :ref="setRef('fulfillBar')" class="h-[180px]"></div>
+        <div v-else :class="emptyCls" style="height: 180px">暂无供货方</div>
       </div>
       <div class="bg-white rounded-xl border border-line p-5">
         <div class="text-sm font-bold mb-3">配额到期预警(7 天内)</div>

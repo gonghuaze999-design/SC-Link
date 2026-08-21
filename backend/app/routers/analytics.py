@@ -17,7 +17,7 @@ from ..entities import (
     SupplierQuota,
 )
 from ..models import AuditLog, User
-from ..services.visibility import visible_owner_ids
+from ..services.visibility import apply_visibility, visible_owner_ids
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -41,6 +41,10 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
     chain_count = db.query(OverseasChain).count() if user.role == "admin" else db.query(OverseasChain).filter(OverseasChain.owner_id.in_(s_owners)).count()
     middle_count = db.query(MiddleLayer).count() if user.role == "admin" else db.query(MiddleLayer).filter(MiddleLayer.owner_id.in_(c_owners)).count()
 
+    orders_q = apply_visibility(db.query(Order), Order, db, user, "supplier")
+    sup_ids = {s.id for s in suppliers_q.all()}
+    cus_ids = {c.id for c in customers_q.all()}
+
     verified_ids = {
         r[0]
         for r in db.query(CapitalVerification.customer_id)
@@ -61,7 +65,7 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
     # 配额到期预警(7 天内)
     expiring = []
     today = _today()
-    for q in db.query(SupplierQuota).filter(SupplierQuota.status == "available").all():
+    for q in db.query(SupplierQuota).filter(SupplierQuota.status == "available", SupplierQuota.supplier_id.in_(sup_ids)).all():
         if q.quota_end_at and today <= q.quota_end_at <= today + timedelta(days=7):
             sup = db.get(Supplier, q.supplier_id)
             expiring.append(
@@ -107,24 +111,24 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
     # ---- 深挖指标 ----
     # 在途资金敞口(付款中订单金额)
     funding_in_progress = float(
-        db.query(func.coalesce(func.sum(Order.total_amount), 0))
-        .filter(Order.status.in_(["sourcing", "sourced", "paying", "paid", "arrived", "delivered"]))
+        orders_q.filter(Order.status.in_(["sourcing", "sourced", "paying", "paid", "arrived", "delivered"]))
+        .with_entities(func.coalesce(func.sum(Order.total_amount), 0))
         .scalar()
         or 0
     )
-    breach_count = db.query(Order).filter(Order.status.in_(["breach", "breach_processing"])).count()
+    breach_count = orders_q.filter(Order.status.in_(["breach", "breach_processing"])).count()
 
     # 付款方式分布(数量+金额)
-    pm_rows = db.query(Order.payment_mode, func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0)).group_by(Order.payment_mode).all()
+    pm_rows = orders_q.with_entities(Order.payment_mode, func.count(Order.id), func.coalesce(func.sum(Order.total_amount), 0)).group_by(Order.payment_mode).all()
     payment_mode_dist = [{"mode": m or "未标注", "count": c, "amount": float(a or 0)} for m, c, a in pm_rows]
 
     # 货源结构:现货/准现货/期货
-    goods_rows = db.query(Supplier.goods_type, func.count(Supplier.id)).group_by(Supplier.goods_type).all()
+    goods_rows = db.query(Supplier.goods_type, func.count(Supplier.id)).filter(Supplier.id.in_(sup_ids)).group_by(Supplier.goods_type).all()
     goods_structure = [{"type": g or "未标注", "count": c} for g, c in goods_rows]
 
     # 配额:按产品线/按链路方/时效分布(可见范围)
     quota_cache_all = {}
-    for q in db.query(SupplierQuota).filter(SupplierQuota.status.in_(["available", "locked"])).all():
+    for q in db.query(SupplierQuota).filter(SupplierQuota.status.in_(["available", "locked"]), SupplierQuota.supplier_id.in_(sup_ids)).all():
         if q.quota_end_at and q.quota_end_at < today:
             continue
         quota_cache_all[(q.supplier_id, q.product_line_id)] = quota_cache_all.get((q.supplier_id, q.product_line_id), 0) + max(0, q.quantity - q.used_quantity)
@@ -145,7 +149,7 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
         quota_by_chain[cname] = quota_by_chain.get(cname, 0) + amt
 
     aging = {"已过期": 0, "7天内": 0, "7-30天": 0, "30天以上": 0}
-    for q in db.query(SupplierQuota).all():
+    for q in db.query(SupplierQuota).filter(SupplierQuota.supplier_id.in_(sup_ids)).all():
         if q.quota_end_at is None:
             aging["30天以上"] += 1
         elif q.quota_end_at < today:
@@ -175,15 +179,19 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
     # 验资状态分布
     v_pending = (
         db.query(CapitalVerification.customer_id)
-        .filter(CapitalVerification.review_status == "pending")
+        .filter(CapitalVerification.review_status == "pending", CapitalVerification.customer_id.in_(cus_ids))
         .distinct()
         .count()
     )
     verification_dist = {"verified": verified_count, "unverified": customer_count - verified_count, "pending": v_pending}
 
     # 客户价值分级
-    grade_rows = db.query(Customer.value_grade, func.count(Customer.id)).filter(Customer.value_grade != "").group_by(Customer.value_grade).all()
-    value_grade_dist = [{"grade": g, "count": c} for g, c in grade_rows]
+    grade_rows = db.query(Customer.value_grade, func.count(Customer.id)).filter(Customer.value_grade != "", Customer.id.in_(cus_ids)).group_by(Customer.value_grade).all()
+    grade_map: dict = {}
+    for g, c in grade_rows:
+        key = g if g in ("A", "B", "C") else "其他"
+        grade_map[key] = grade_map.get(key, 0) + c
+    value_grade_dist = [{"grade": k, "count": v} for k, v in sorted(grade_map.items(), key=lambda x: ["A", "B", "C", "其他"].index(x[0]) if x[0] in ["A", "B", "C", "其他"] else 9)]
 
     # 供货方履约率分布
     f_high = f_low = f_none = 0
@@ -232,8 +240,8 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
         else:
             end = datetime(yy, mm0 + 1, 1)
         amt = float(
-            db.query(func.coalesce(func.sum(Order.total_amount), 0))
-            .filter(Order.created_at >= start, Order.created_at < end)
+            orders_q.filter(Order.created_at >= start, Order.created_at < end)
+            .with_entities(func.coalesce(func.sum(Order.total_amount), 0))
             .scalar()
             or 0
         )
