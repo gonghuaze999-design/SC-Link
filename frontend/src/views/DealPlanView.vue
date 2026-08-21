@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { toPng } from 'html-to-image'
+import { jsPDF } from 'jspdf'
 import {
   computePlan,
   createDealPlan,
@@ -266,8 +267,36 @@ async function exportPng() {
     exporting.value = false
   }
 }
-function exportPdf() {
-  window.print()
+async function exportPdf() {
+  if (!exportRef.value) return
+  exporting.value = true
+  try {
+    const img = await toPng(exportRef.value, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true })
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+    const pageW = pdf.internal.pageSize.getWidth()
+    const pageH = pdf.internal.pageSize.getHeight()
+    const imgObj = new Image()
+    imgObj.src = img
+    await new Promise((res, rej) => {
+      imgObj.onload = res
+      imgObj.onerror = rej
+    })
+    const mmPerPx = pageW / imgObj.width
+    const totalHmm = imgObj.height * mmPerPx
+    let y = 0
+    let first = true
+    while (y < totalHmm - 1) {
+      if (!first) pdf.addPage()
+      first = false
+      pdf.addImage(img, 'PNG', 0, -y, pageW, totalHmm)
+      y += pageH
+    }
+    pdf.save(`${current.value?.title || '交易链路'}-${exportMode.value === 'full' ? '内部版' : '对外版'}.pdf`)
+  } catch (e) {
+    alert('导出失败:' + errMsg(e))
+  } finally {
+    exporting.value = false
+  }
 }
 
 const totalDown = computed(() => ((current.value?.downstream_price ?? 0) * (current.value?.quantity ?? 0)))
@@ -507,7 +536,7 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
             <div class="ml-auto flex gap-2">
               <button class="px-4 py-2 rounded-lg text-[13px] border border-line text-muted" @click="exportDlg.show = false">取消</button>
               <button :disabled="exporting" class="px-5 py-2.5 rounded-lg text-[13px] bg-primary disabled:opacity-60 text-white" @click="exportPng">{{ exporting ? '生成中…' : '导出 PNG 高清图' }}</button>
-              <button class="px-5 py-2.5 rounded-lg text-[13px] border border-primary text-primary" @click="exportPdf">导出 PDF(打印)</button>
+              <button class="px-5 py-2.5 rounded-lg text-[13px] border border-primary text-primary" @click="exportPdf">下载 PDF</button>
             </div>
           </div>
 
@@ -672,58 +701,6 @@ onMounted(() => { loadPlans(); listProductLines().then((r) => (products.value = 
   </div>
 </template>
 <style>
-@media print {
-  @page {
-    size: A4 landscape;
-    margin: 10mm;
-  }
-  html, body {
-    height: auto;
-    overflow: visible;
-  }
-  body * {
-    visibility: hidden;
-  }
-  /* 弹窗容器转正常文档流,让浏览器自动跨页分页,内容完整输出 */
-  .export-dlg-overlay {
-    visibility: visible;
-    position: static !important;
-    inset: auto !important;
-    display: block !important;
-    background: none !important;
-  }
-  .export-dlg-box {
-    visibility: visible;
-    position: static !important;
-    width: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-  }
-  .export-dlg-box > div:not(.export-content) {
-    display: none;
-  }
-  .export-content {
-    display: block;
-    padding: 0 !important;
-  }
-  .export-content .export-options-bar {
-    display: none !important;
-  }
-  .export-area {
-    visibility: visible;
-    width: 100% !important;
-    border: none !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .export-area * {
-    visibility: visible;
-  }
-}
 .export-area th,
 .export-area td {
   vertical-align: middle;
