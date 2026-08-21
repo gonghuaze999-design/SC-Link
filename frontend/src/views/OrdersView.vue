@@ -302,7 +302,7 @@ function cname(id: number | null) {
   <div>
     <div class="bg-white rounded-xl border border-line">
       <div class="flex items-center gap-3 p-4 border-b border-line flex-wrap">
-        <input v-model="keyword" :class="inputCls + ' w-52'" placeholder="搜索订单号/协议号" @keyup.enter="load" />
+        <input v-model="keyword" :class="inputCls + ' w-52'" placeholder="搜索订单号/协议号/参与方名称" @keyup.enter="load" />
         <select v-model="statusFilter" :class="inputCls + ' w-40'" @change="load">
           <option value="">全部状态</option>
           <option v-for="(m, k) in ORDER_STATUSES" :key="k" :value="k">{{ m.label }}</option>
@@ -397,6 +397,8 @@ function cname(id: number | null) {
               <div v-if="i < flowSteps.length - 1" class="flex-1 h-0.5 mx-1 mb-4" :class="flowIdx(detail.status) > i ? 'bg-primary' : 'bg-line'"></div>
             </template>
           </div>
+
+          <div class="text-xs text-muted mb-3">节点随跟踪事件自动标记(货源/资金/到货/交付逐级推进,违约事件自动进入违约分支);也可用下方按钮手动调整</div>
 
           <!-- 违约状态操作 -->
           <div v-if="detail.status === 'breach' || detail.status === 'breach_processing'" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-center gap-3">
@@ -514,7 +516,8 @@ function cname(id: number | null) {
 
       <!-- AI 提取弹窗 -->
       <div v-if="aiDlg.show" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]" @click.self="aiDlg.show = false">
-        <div class="bg-white rounded-xl w-[520px] max-h-[86vh] overflow-y-auto p-6 shadow-2xl">
+        <div class="bg-white rounded-xl w-[520px] max-h-[86vh] overflow-y-auto p-6 shadow-2xl relative">
+          <button class="absolute top-3 right-3 w-8 h-8 rounded-lg hover:bg-slate-100 text-lg text-muted" @click="aiDlg.show = false">×</button>
           <div class="text-base font-bold mb-3">AI 从沟通记录提取跟踪事件</div>
           <textarea v-model="aiText" :class="inputCls" rows="4" placeholder="粘贴微信/邮件沟通内容,如:今天和客户确认了下周一打尾款 80%,上游说货已经到香港仓,下周安排报关"></textarea>
           <button :disabled="aiLoading" class="mt-3 px-4 py-2 rounded-lg text-[13px] bg-primary disabled:opacity-60 text-white" @click="doAiExtract">{{ aiLoading ? '提取中…' : 'AI 提取' }}</button>

@@ -542,6 +542,30 @@ def run_all(m):
         return r.status_code == 422, "空违约事项被拒(422)"
     t(f10, "F.订单", "违约事项必填校验", "极限")
 
+    def f11():
+        # 跟踪事件自动推进:货源→货源已确认,资金→付款中,违约→违约分支(记录违约前环节)
+        o = req("POST", "/orders", ta, {"order_no": f"{PREFIX}DD-自动推进", "quantity": 10}).json()
+        oid = o["id"]
+        req("POST", f"/orders/{oid}/tracks", ta, {"category": "货源", "title": "开始确认货源", "content": "联系上游"})
+        s0 = req("GET", f"/orders/{oid}", ta).json()["status"]
+        req("POST", f"/orders/{oid}/tracks", ta, {"category": "货源", "title": "配额锁定", "content": "锁定 10 台"})
+        s1 = req("GET", f"/orders/{oid}", ta).json()["status"]
+        req("POST", f"/orders/{oid}/tracks", ta, {"category": "资金", "title": "定金到账", "content": "收到定金"})
+        s2 = req("GET", f"/orders/{oid}", ta).json()["status"]
+        req("POST", f"/orders/{oid}/tracks", ta, {"category": "违约", "title": "延期", "content": "上游通知延期"})
+        d3 = req("GET", f"/orders/{oid}", ta).json()
+        ok = s0 == "sourcing" and s1 == "sourced" and s2 == "paying" and d3["status"] == "breach" and d3["pre_breach_status"] == "paying"
+        return ok, f"货源①→{s0},货源②→{s1},资金→{s2},违约→{d3['status']}(违约前={d3['pre_breach_status']})"
+    t(f11, "F.订单", "跟踪事件自动推进与违约自动标记", "一般用户")
+
+    def f12():
+        # 模糊搜索:按供货方名称搜到订单
+        r = req("GET", f"/orders?keyword={requests.utils.quote('芯联')}", ta)
+        names = [x["order_no"] for x in r.json()]
+        r2 = req("GET", "/orders?keyword=不存在的关键词xyz", ta)
+        return len(names) >= 1 and len(r2.json()) == 0, f"按供货方简称命中 {len(names)} 条,无关键词 0 条"
+    t(f12, "F.订单", "订单模糊搜索(参与方名称/简称)", "一般用户")
+
     # ---- G. 分析中台 ----
     def g1():
         r = req("GET", "/analytics/overview", admin)

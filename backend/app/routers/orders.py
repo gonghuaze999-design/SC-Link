@@ -77,8 +77,16 @@ def list_orders(
     if status:
         q = q.filter(Order.status == status)
     if keyword:
-        q = q.filter(Order.order_no.like(f"%{keyword}%") | Order.contract_no.like(f"%{keyword}%"))
-    return q.order_by(Order.id.desc()).limit(200).all()
+        like = f"%{keyword}%"
+        sup_ids = db.query(Supplier.id).filter(Supplier.name.like(like) | Supplier.short_name.like(like)).subquery()
+        cus_ids = db.query(Customer.id).filter(Customer.name.like(like)).subquery()
+        q = q.filter(
+            Order.order_no.like(like)
+            | Order.contract_no.like(like)
+            | Order.supplier_id.in_(sup_ids)
+            | Order.customer_id.in_(cus_ids)
+        )
+    return q.order_by(Order.created_at.desc(), Order.id.desc()).limit(200).all()
 
 
 @router.post("/orders", response_model=OrderOut, status_code=201)
@@ -177,12 +185,22 @@ def list_tracks(order_id: int, user: User = Depends(get_current_user), db: Sessi
     return db.query(OrderTrack).filter(OrderTrack.order_id == order_id).order_by(OrderTrack.id.desc()).all()
 
 
+# 事件分类 → 主流程自动推进(每记一条事件推进一步)
+TRACK_ADVANCE: dict[str, list[tuple[str, str]]] = {
+    "货源": [("registered", "sourcing"), ("sourcing", "sourced")],
+    "资金": [("sourced", "paying"), ("paying", "paid")],
+    "到货": [("paid", "arrived")],
+    "交付": [("arrived", "delivered"), ("delivered", "done")],
+}
+BREACH_STATUSES = ("breach", "breach_processing", "breach_resolved")
+
+
 @router.post("/orders/{order_id}/tracks", response_model=TrackOut, status_code=201)
 def create_track(
     order_id: int, body: TrackIn, request: Request,
     user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
-    _order_or_404(db, order_id, user)
+    order = _order_or_404(db, order_id, user)
     track = OrderTrack(
         order_id=order_id, category=body.category, title=body.title,
         content=body.content, attachment=body.attachment,
@@ -191,6 +209,23 @@ def create_track(
     db.add(track)
     db.flush()
     write_audit(db, request, user, "create", "track", str(track.id), new_value=body.model_dump(), detail=f"订单#{order_id} 新增跟踪事件({body.category})")
+
+    # 违约事件:自动进入违约分支(记录违约前环节)
+    if body.category == "违约" and order.status not in BREACH_STATUSES:
+        order.pre_breach_status = order.status
+        order.status = "breach"
+        order.version += 1
+        order.last_editor_id = user.id
+        write_audit(db, request, user, "update", "order", str(order.id), new_value={"status": "breach"}, detail=f"违约事件自动标记:订单 {order.order_no} 进入违约")
+    else:
+        pairs = TRACK_ADVANCE.get(body.category, [])
+        for cur, nxt in pairs:
+            if order.status == cur:
+                order.status = nxt
+                order.version += 1
+                order.last_editor_id = user.id
+                write_audit(db, request, user, "update", "order", str(order.id), new_value={"status": nxt}, detail=f"跟踪事件自动推进:订单 {order.order_no} → {STATUS_LABELS.get(nxt, nxt)}")
+                break
     db.commit()
     db.refresh(track)
     return track
