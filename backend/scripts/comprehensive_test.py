@@ -644,6 +644,22 @@ def run_all(m):
         return ok, f"大额订单(7.25亿)后概览正常,在途资金={d.get('funding_in_progress')}"
     t(g7, "G.分析", "合法极端值(超长名称+大额订单)", "一般用户")
 
+    def g8():
+        # 个人工作台聚合接口
+        r = req("GET", "/dashboard/overview", admin)
+        d = r.json()
+        ok = (
+            r.status_code == 200
+            and "pending_shares" in d
+            and "orders" in d
+            and "expiring" in d
+            and "duty" in d
+            and "stale" in d
+            and "stats" in d
+        )
+        return ok, f"待审批={d.get('pending_shares')},在途={d.get('active_orders_count')},到期={len(d.get('expiring', []))}"
+    t(g8, "G.分析", "个人工作台聚合(待办/订单/到期/简报)", "管理员")
+
     # ---- H. AI 功能 ----
     def h1():
         r = req("POST", "/publications/parse", ta, {"text": "求购 B300 期货 100 台,预算 1.3 亿,可接受国内信用证,四季度交货"})

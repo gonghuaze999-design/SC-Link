@@ -154,6 +154,23 @@ export interface AnalyticsOverview {
   dynamics: { username: string; action: string; entity_type: string; entity_id: string; detail: string; at: string }[]
 }
 
+export interface DashboardOverview {
+  pending_shares: number
+  pending_detail_requests: number
+  orders: { id: number; order_no: string; status: string; quantity: number; total_amount: number; supplier_name: string; customer_name: string; updated_at: string }[]
+  active_orders_count: number
+  expiring: { type: string; detail: string }[]
+  duty: { id: number; ai_text: string; note: string; created_at: string } | null
+  unread_duty: number
+  stale: { type: string; name: string; days: number }[]
+  stats: { supplier_count: number; customer_count: number; active_pubs: number }
+}
+
+export async function fetchDashboard() {
+  const { data } = await http.get('/dashboard/overview')
+  return data as DashboardOverview
+}
+
 export async function fetchAnalytics() {
   const { data } = await http.get('/analytics/overview')
   return data as AnalyticsOverview
