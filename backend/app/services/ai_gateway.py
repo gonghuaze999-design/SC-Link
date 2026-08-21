@@ -22,10 +22,17 @@ def ai_enabled() -> bool:
     return bool(settings.gemini_api_key)
 
 
+def _opener():
+    if settings.gemini_proxy:
+        return urllib.request.build_opener(urllib.request.ProxyHandler({"http": settings.gemini_proxy, "https": settings.gemini_proxy}))
+    return urllib.request.build_opener()
+
+
 def _call(parts: list[dict]) -> str | None:
     if not ai_enabled():
         return None
     body = json.dumps({"contents": [{"parts": parts}]}).encode("utf-8")
+    opener = _opener()
     for attempt in range(2):
         req = urllib.request.Request(
             _gemini_url() + f"?key={settings.gemini_api_key}",
@@ -33,7 +40,7 @@ def _call(parts: list[dict]) -> str | None:
             headers={"Content-Type": "application/json"},
         )
         try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
+            with opener.open(req, timeout=120) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             text = data["candidates"][0]["content"]["parts"][0]["text"]
             if text and text.strip():
