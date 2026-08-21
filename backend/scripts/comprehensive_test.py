@@ -6,6 +6,7 @@
 """
 import json
 import random
+import sys
 import threading
 import time
 from datetime import date, timedelta
@@ -68,24 +69,24 @@ def _cleanup_mock_data():
 
     sql = """
 SET FOREIGN_KEY_CHECKS=0;
-DELETE t FROM order_tracks t JOIN orders o ON t.order_id=o.id WHERE HEX(LEFT(o.order_no,1))='E38090';
-DELETE b FROM breaches b JOIN orders o ON b.order_id=o.id WHERE HEX(LEFT(o.order_no,1))='E38090';
-DELETE FROM orders WHERE HEX(LEFT(order_no,1))='E38090';
+DELETE t FROM order_tracks t JOIN orders o ON t.order_id=o.id WHERE HEX(LEFT(o.order_no,2))='E38090E6B58B';
+DELETE b FROM breaches b JOIN orders o ON b.order_id=o.id WHERE HEX(LEFT(o.order_no,2))='E38090E6B58B';
+DELETE FROM orders WHERE HEX(LEFT(order_no,2))='E38090E6B58B';
 DELETE FROM match_results;
 DELETE FROM detail_requests;
 DELETE FROM user_priorities;
 DELETE FROM data_shares;
 DELETE FROM capital_verifications WHERE customer_id NOT IN (SELECT id FROM customers);
-DELETE FROM supplier_quotas WHERE supplier_id IN (SELECT id FROM suppliers WHERE HEX(LEFT(name,1))='E38090') OR supplier_id NOT IN (SELECT id FROM suppliers);
+DELETE FROM supplier_quotas WHERE supplier_id IN (SELECT id FROM suppliers WHERE HEX(LEFT(name,2))='E38090E6B58B') OR supplier_id NOT IN (SELECT id FROM suppliers);
 DELETE FROM communications WHERE entity_id NOT IN (SELECT id FROM suppliers);
-DELETE FROM suppliers WHERE HEX(LEFT(name,1))='E38090';
-DELETE FROM customers WHERE HEX(LEFT(name,1))='E38090';
-DELETE FROM middle_layers WHERE HEX(LEFT(name,1))='E38090';
-DELETE FROM publications WHERE HEX(LEFT(title,1))='E38090';
-DELETE FROM deal_flows WHERE plan_id IN (SELECT id FROM deal_plans WHERE HEX(LEFT(title,1))='E38090');
-DELETE FROM deal_nodes WHERE plan_id IN (SELECT id FROM deal_plans WHERE HEX(LEFT(title,1))='E38090');
-DELETE FROM deal_plans WHERE HEX(LEFT(title,1))='E38090' OR owner_id IN (SELECT id FROM users WHERE username LIKE 'm_user_%');
-DELETE FROM order_documents WHERE order_id IN (SELECT id FROM orders WHERE HEX(LEFT(order_no,1))='E38090');
+DELETE FROM suppliers WHERE HEX(LEFT(name,2))='E38090E6B58B';
+DELETE FROM customers WHERE HEX(LEFT(name,2))='E38090E6B58B';
+DELETE FROM middle_layers WHERE HEX(LEFT(name,2))='E38090E6B58B';
+DELETE FROM publications WHERE HEX(LEFT(title,2))='E38090E6B58B';
+DELETE FROM deal_flows WHERE plan_id IN (SELECT id FROM deal_plans WHERE HEX(LEFT(title,2))='E38090E6B58B');
+DELETE FROM deal_nodes WHERE plan_id IN (SELECT id FROM deal_plans WHERE HEX(LEFT(title,2))='E38090E6B58B');
+DELETE FROM deal_plans WHERE HEX(LEFT(title,2))='E38090E6B58B' OR owner_id IN (SELECT id FROM users WHERE username LIKE 'm_user_%');
+DELETE FROM order_documents WHERE order_id IN (SELECT id FROM orders WHERE HEX(LEFT(order_no,2))='E38090E6B58B');
 DELETE FROM duty_reports;
 DELETE FROM users WHERE username LIKE 'm_user_%';
 DELETE FROM audit_logs WHERE entity_type='match';
@@ -1129,3 +1130,13 @@ if __name__ == "__main__":
     mock = setup_mock()
     run_all(mock)
     generate_report()
+    # 测试结束后自动恢复演示数据(清理测试残留+重灌演示),保证分析中台始终有可视化内容
+    import subprocess
+
+    print("\n>>> 恢复演示数据…")
+    subprocess.run(
+        [str(Path(sys.executable)), str(Path(__file__).resolve().parent / "seed_demo_data.py"), "--purge-tests"],
+        capture_output=True,
+        timeout=300,
+    )
+    print(">>> 演示数据已恢复,分析中台可正常展示")
